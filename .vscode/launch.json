@@ -1,0 +1,38 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Train: 7-2-1 Split + Early Stopping",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/train.py",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "args": [
+                "--split-ratio",
+                "7:2:1",
+                "--split-seed",
+                "0",
+                "--eval-every",
+                "1",
+                "--early-stopping-metric",
+                "mAP",
+                "--early-stopping-patience",
+                "10",
+                "--early-stopping-min-delta",
+                "0.0001"
+            ]
+        }
+    ]
+}

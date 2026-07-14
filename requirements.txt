@@ -1,0 +1,8 @@
+# Install a CUDA-enabled PyTorch wheel appropriate for WSL2 first.
+# 请先安装与 WSL2/CUDA 匹配的 PyTorch wheel。
+torch>=2.1
+numpy>=1.24
+Pillow>=9.5
+tqdm>=4.65
+onnx>=1.14
+# Optional runtime verification / 可选运行时校验：onnxruntime-gpu>=1.16
