@@ -30,11 +30,17 @@
   "gpu": 0,
   "amp": true,
   "seed": 0,
+  "split_ratio": "7:2:1",
+  "split_seed": 0,
   "resume": null,
   "test_only": false,
   "mode": "all",
-  "eval_every": 10,
+  "eval_every": 1,
   "gallery_trials": 10,
   "save_every": 10,
-  "log_interval": 20
+  "log_interval": 20,
+  "early_stopping_patience": 10,
+  "early_stopping_min_delta": 0.0001,
+  "early_stopping_metric": "mAP",
+  "disable_early_stopping": false
 }

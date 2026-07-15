@@ -1,3 +1,7 @@
 /old/
 /SYSU-MM01/
 *.pt
+/RGCNFormer_WebAndWx_WebFrontend/node_modules
+/RGCNFormer_WebAndWx_backend/.idea
+/RGCNFormer_WebAndWx_backend/.pytest_cache
+/RGCNFormer_WebAndWx_backend/.venv
