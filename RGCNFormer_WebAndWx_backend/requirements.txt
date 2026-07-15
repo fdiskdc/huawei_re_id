@@ -1,0 +1,28 @@
+# Web Framework
+Flask>=2.0.0
+Flask-Cors>=3.0.0
+
+# HTTP Requests
+requests>=2.25.0
+
+# Deep Learning Framework
+# torch>=1.10.0
+# torch-geometric>=2.0.0
+# torch-scatter>=2.0.0
+# torch-sparse>=0.6.0
+
+# Data Processing
+numpy>=1.20.0
+openpyxl>=3.1.0
+
+# Model Interpretability
+captum>=0.4.0
+
+# Task Queue
+celery>=5.2.0
+
+# Redis Client
+redis>=4.0.0
+
+# Production Server
+gunicorn>=20.1.0

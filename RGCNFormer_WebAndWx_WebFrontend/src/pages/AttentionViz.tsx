@@ -1,3 +1,49 @@
+/**
+ * AttentionViz.tsx - Transformer 注意力权重可视化 / Transformer attention visualization
+ *
+ * /attention 路由页面。展示模型对当前 RNA 序列的注意力权重,支持:
+ *   - 视口窗口滑动(左右箭头 / InputNumber 跳转)
+ *   - 头选择(单 head / 多 head 平均)
+ *   - 注意力热力图 + 序列字符叠加
+ * 流程:用户输入序列 → predict() → 拿到 attention 矩阵 → 切片到当前视口 → 渲染。
+ * Page mounted at /attention. Renders the model's attention weights on the current
+ * RNA sequence with:
+ *   - Sliding viewport (arrows / InputNumber jump)
+ *   - Head selection (single head or multi-head average)
+ *   - Attention heatmap + sequence characters overlay
+ * Pipeline: user sequence → predict() → attention matrix → slice current viewport → render.
+ *
+ * 功能模块 / Modules:
+ * - 视口滑动(useState 索引 + 左右箭头)/ Viewport sliding
+ * - 头选择(Select)/ Head selection
+ * - 注意力热力图(ECharts)/ ECharts heatmap
+ * - 序列字符叠加(颜色按位置权重)/ Sequence char overlay
+ * - 加载/错误态 / Loading/error states
+ *
+ * 输入 / Inputs:
+ * - useRna().rnaSequence: 当前序列
+ * - user-selected head index(es)/ selected head indices
+ * - viewportStart: 视口起始位置 / viewport start position
+ *
+ * 输出 / Outputs:
+ * - JSX.Element 注意力热力图 + 序列 / Heatmap + sequence JSX
+ *
+ * 数据流 / Data Flow:
+ * 1. useEffect(rnaSequence 变化)→ predict() → 拿 attention tensor
+ * 2. 按 head 选择切片 → matrix[L, L]
+ * 3. 按 viewport 切窗口 → matrix[win:L, win:L]
+ * 4. 渲染热力图(权重→颜色) + 字符(权重→字号/色)
+ * 5. 滑动 / 切 head → 重新切片渲染
+ *
+ * 相关文件 / Related Files:
+ * - 调用 / Calls: lib/api.ts(predict)、context/RnaContext
+ * - 被调用 / Called by: App.tsx(<Route path="/attention">)
+ * - 关联 / Related: AttentionComparisonViz.tsx(多模型对比)、IntegratedGradientsViz.tsx
+ *
+ * 使用示例 / Usage Example:
+ *   <Route path="/attention" element={<AttentionViz />} />
+ *   // 浏览器 /mrmodn/attention
+ */
 import React, { useState, useEffect, useMemo } from 'react';
 import { Spin, Alert, InputNumber, Button, Space, Card, Select, Typography } from 'antd';
 import { ArrowLeftOutlined, ArrowRightOutlined } from '@ant-design/icons';
@@ -401,13 +447,13 @@ const AttentionViz: React.FC<AttentionVizProps> = ({ data: propData }) => {
     return viewportElements;
   };
 
-  if (!rnaSequence) {
+  if (!propData && !rnaSequence) {
     return (
       <Alert
         message={t('Error')}
         description={
           <>
-            {t('Please enter an RNA sequence.')} <Link to="/">{t('Return to Home')}</Link>
+            {t('Please enter an RNA sequence.')} <Link to="/classic">{t('Return to Home')}</Link>
           </>
         }
         type="error"

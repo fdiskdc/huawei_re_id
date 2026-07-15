@@ -1,1 +1,1 @@
-"""Model definitions and runtime utilities."""
+"""Models used by optional visualization services."""

@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from PIL import Image
 
-from mrmodn_backend.core.config import config
+from config import config
 from mrmodn_backend.models.reid import CNNTransformerReID, load_pretrained_reid
 from mrmodn_backend.services.reid_dataset import ReIDDatasetService
 from mrmodn_backend.services.reid_heatmap import _normalize_batch

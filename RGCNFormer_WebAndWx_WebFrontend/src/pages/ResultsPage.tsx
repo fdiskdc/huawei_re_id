@@ -1,9 +1,50 @@
+/**
+ * ResultsPage.tsx - 单任务结果聚合页(由 :jobId 驱动)/ Per-job result aggregator
+ *
+ * /results/:jobId 路由页面。接收 URL 中的 jobId,useQuery 拉取该任务完整结果
+ * (classification / attention / gcn / ig / umap),并以左右分栏 / Tab 形式聚合展示
+ * 所有可视化子组件。配合后端的"提交任务 + 轮询"流程使用。
+ * Page mounted at /results/:jobId. Reads :jobId from the URL, fetches the full
+ * result (classification/attention/gcn/ig/umap) via useQuery, and renders every
+ * visualization sub-component in a sidebar-tab layout. Used after backend submit+polling.
+ *
+ * 功能模块 / Modules:
+ * - :jobId URL 参数解析 / :jobId URL param parsing
+ * - useQuery 拉任务结果(fetchResult by jobId)
+ * - Tab 菜单(分类/注意力/GCN/IG/UMAP/对比)
+ *   / Tab menu (classification/attention/GCN/IG/UMAP/compare)
+ * - 选中 Tab → 渲染对应子组件 / Selected tab → render child
+ *
+ * 输入 / Inputs:
+ * - URL params: { jobId: string } / job id from URL
+ * - 后端 /api/v1/get-result?jobId=xxx 返回 ResultData
+ *
+ * 输出 / Outputs:
+ * - JSX.Element 结果聚合页 / Results page JSX
+ *
+ * 数据流 / Data Flow:
+ * 1. URL 进入 /results/:jobId
+ * 2. useParams 拿 jobId → useQuery(fetchResult, jobId)
+ * 3. 拿到 ResultData → 渲染 Tab 菜单
+ * 4. 用户切 Tab → 渲染对应子组件
+ * 5. 任何子组件用 lib/api 进一步拉 viz 数据
+ *
+ * 相关文件 / Related Files:
+ * - 调用 / Calls: lib/api.ts(fetchResult by jobId)、多个 viz 子组件
+ * - 被调用 / Called by: App.tsx(<Route path="/results/:jobId">)
+ * - 关联 / Related: VizDisplayPage.tsx(类似聚合,但接收 state 而非 URL)
+ *
+ * 使用示例 / Usage Example:
+ *   <Route path="/results/:jobId" element={<ResultsPage />} />
+ *   // 浏览器 /mrmodn/results/<uuid>
+ */
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { MenuOutlined, ClusterOutlined, EyeOutlined, PartitionOutlined, LineChartOutlined, AimOutlined } from '@ant-design/icons';
+import { MenuOutlined, ClusterOutlined, EyeOutlined, PartitionOutlined, LineChartOutlined, AimOutlined, BarChartOutlined } from '@ant-design/icons';
 import ClassificationViz from './ClassificationViz';
 import AttentionViz from './AttentionViz';
+import AttentionDistributionViz from './AttentionDistributionViz';
 import GcnViz from './GcnViz';
 import TargetGcnViz from './TargetGcnViz';
 import IntegratedGradientsViz from './IntegratedGradientsViz';
@@ -11,7 +52,7 @@ import { fetchResult, isProcessing, isCompleted, isFailed, getErrorMessage } fro
 import { useTranslation } from '../lib/i18n/LanguageContext';
 import './ResultsPage.css';
 
-type ViewType = 'classification' | 'attention' | 'gcn' | 'target-gcn' | 'integrated-gradients' | 'model-viz';
+type ViewType = 'classification' | 'attention' | 'attention-score' | 'gcn' | 'target-gcn' | 'integrated-gradients' | 'model-viz';
 
 const POLL_INTERVAL = 3000; // 3 seconds
 const TIMEOUT = 300000; // 5 minutes
@@ -131,6 +172,12 @@ const ResultsPage: React.FC = () => {
       label: t('Attention'),
       icon: <EyeOutlined />,
       component: <AttentionViz data={resultData.attention} />
+    },
+    {
+      key: 'attention-score',
+      label: t('Attention Score'),
+      icon: <BarChartOutlined />,
+      component: <AttentionDistributionViz />
     },
     {
       key: 'gcn',

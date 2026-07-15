@@ -1,1 +1,1 @@
-"""Flask API routes and request handlers."""
+"""Flask blueprints for optional visualization services."""

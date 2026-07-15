@@ -1,10 +1,51 @@
+/**
+ * GcnViz.tsx - GCN 图结构 3D 可视化(react-force-graph-3d)/ GCN graph 3D visualization
+ *
+ * /gcn 路由页面。使用 react-force-graph-3d 渲染 RNA 二级结构图(节点 = 核苷酸,
+ * 边 = 配对关系),颜色按节点类型着色。流程:用户提交序列 → 后端推理 →
+ * 返回图数据 → 渲染 3D 视图。提供自动旋转、暂停、重置视角等交互。
+ * Page mounted at /gcn. Uses react-force-graph-3d to render the RNA secondary-structure
+ * graph (nodes = nucleotides, edges = base pairs) with per-type coloring. Pipeline:
+ * user submits sequence → backend inference → graph payload returned → 3D scene rendered.
+ * Provides auto-rotation, pause, and camera-reset interactions.
+ *
+ * 功能模块 / Modules:
+ * - 3D 力导向图(react-force-graph-3d)/ 3D force-directed graph
+ * - 节点类型着色(N/M/P 等)/ Per-type node coloring
+ * - 视角控制(自动旋转/暂停/重置)/ Camera controls
+ * - 加载/错误状态(Spin, Alert)/ Loading/error states
+ *
+ * 输入 / Inputs:
+ * - useRna().rnaSequence / jobId / setJobId: 来自 RnaContext / from RnaContext
+ * - 后端 /api/v1/submit-task + /api/v1/get-result 轮询 / Submit + poll endpoints
+ *
+ * 输出 / Outputs:
+ * - JSX.Element 3D 图容器 / 3D graph container JSX
+ *
+ * 数据流 / Data Flow:
+ * 1. 用户输入序列 → setRnaSequence(rnaSequence)
+ * 2. 点击"提交" → submitTask(...) → 拿到 jobId
+ * 3. 轮询 getResult → 拿到 graph payload(节点/边/坐标)
+ * 4. 构造 GraphData → 喂给 <ForceGraph3D>
+ * 5. 用户操作相机(滚轮缩放、拖拽旋转)
+ *
+ * 相关文件 / Related Files:
+ * - 调用 / Calls: lib/api.ts(submitTask, generateJobId)、context/RnaContext
+ * - 被调用 / Called by: App.tsx(<Route path="/gcn">)
+ * - 关联 / Related: TargetGcnViz.tsx(目标节点 GCN)、ModelViz.tsx(模型图)
+ *
+ * 使用示例 / Usage Example:
+ *   // App.tsx
+ *   <Route path="/gcn" element={<GcnViz />} />
+ *   // 浏览器访问 http://host:5173/mrmodn/gcn
+ */
 import React, { useState, useEffect, useRef } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
 import { Spin, Alert, Card, Typography } from 'antd';
 import { Link } from 'react-router-dom';
 import { useRna } from '../context/RnaContext';
 import { useTranslation } from '../lib/i18n/LanguageContext';
-import { submitTask } from '../lib/api';
+import { submitTask, generateJobId } from '../lib/api';
 
 interface Node {
   id: string;
@@ -33,11 +74,6 @@ interface ClassifiedLinks {
   backboneLinks: Link[];
   pairingLinks: Link[];
 }
-
-const DESKTOP_BREAKPOINT = 768;
-const SIDER_WIDTH_EXPANDED = 200;
-const SIDER_WIDTH_COLLAPSED = 80;
-const CONTENT_PADDING = 40;
 
 // Morandi nucleotide color scheme - each nucleotide gets a distinct Morandi color
 const NUCLEOTIDE_MORANDI_COLORS = {
@@ -74,13 +110,12 @@ const GcnViz: React.FC<GcnVizProps> = ({ data: propData }) => {
   const [error, setError] = useState<string | null>(null);
   const [gcnData, setGcnData] = useState<GraphData | null>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-  const [isDesktop, setIsDesktop] = useState(window.innerWidth > DESKTOP_BREAKPOINT);
   const graphRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const resizeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const classifiedLinksRef = useRef<ClassifiedLinks | null>(null);
 
-  const { rnaSequence } = useRna();
+  const { rnaSequence, dataset, datasetIndex } = useRna();
 
   // Helper function to classify links
   const classifyLinks = (links: Link[], nodes: Node[]): ClassifiedLinks => {
@@ -142,21 +177,9 @@ const GcnViz: React.FC<GcnVizProps> = ({ data: propData }) => {
     const updateSize = () => {
       if (!containerRef.current) return;
 
-      const windowWidth = window.innerWidth;
-      const windowHeight = window.innerHeight;
-      const desktop = windowWidth > DESKTOP_BREAKPOINT;
-      setIsDesktop(desktop);
-
-      let availableWidth = windowWidth;
-      if (desktop) {
-        const siderElement = document.querySelector('.ant-layout-sider');
-        const isCollapsed = siderElement?.classList.contains('ant-layout-sider-collapsed');
-        const sidebarWidth = isCollapsed ? SIDER_WIDTH_COLLAPSED : SIDER_WIDTH_EXPANDED;
-        availableWidth = windowWidth - sidebarWidth;
-      }
-
-      availableWidth -= CONTENT_PADDING;
-      const availableHeight = windowHeight - CONTENT_PADDING;
+      const rect = containerRef.current.getBoundingClientRect();
+      const availableWidth = rect.width;
+      const availableHeight = rect.height;
 
       setContainerSize({ width: availableWidth, height: availableHeight });
 
@@ -277,9 +300,11 @@ const GcnViz: React.FC<GcnVizProps> = ({ data: propData }) => {
 
       try {
         const apiData = await submitTask({
-          jobId: crypto.randomUUID(),
+          jobId: generateJobId(),
           userId: 'user1',
-          rnaSequence: rnaSequence
+          rnaSequence: rnaSequence,
+          dataset: dataset,
+          datasetIndex: datasetIndex,
         });
         const graphData: GraphData = apiData.gcn;
 
@@ -292,7 +317,7 @@ const GcnViz: React.FC<GcnVizProps> = ({ data: propData }) => {
     };
 
     fetchData();
-  }, [propData, rnaSequence]);
+  }, [propData, rnaSequence, dataset, datasetIndex]);
 
   // Set camera position after data is loaded
   useEffect(() => {
@@ -313,7 +338,7 @@ const GcnViz: React.FC<GcnVizProps> = ({ data: propData }) => {
         message={t('Error')}
         description={
           <>
-            {t('Please enter an RNA sequence.')} <Link to="/">{t('Return to Home')}</Link>
+            {t('Please enter an RNA sequence.')} <Link to="/classic">{t('Return to Home')}</Link>
           </>
         }
         type="error"
@@ -345,7 +370,8 @@ const GcnViz: React.FC<GcnVizProps> = ({ data: propData }) => {
         className="gcn-viz-container"
         style={{
           width: '100%',
-          height: isDesktop ? 'calc(100vh - 40px)' : 'calc(100vh - 100px)',
+          height: '100%',
+          minHeight: '400px',
           position: 'relative',
           background: MORANDI_COLORS.background,
           borderRadius: '8px',
@@ -436,73 +462,56 @@ const GcnViz: React.FC<GcnVizProps> = ({ data: propData }) => {
               enableNodeDrag={true}
               cooldownTicks={200}
             />
-            
-            {/* Color Legend */}
-            <div style={{
-              position: 'absolute',
-              bottom: 20,
-              left: 20,
-              background: 'rgba(244, 241, 234, 0.95)',
-              padding: '16px',
-              borderRadius: '8px',
-              zIndex: 50,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-              border: `1px solid ${MORANDI_BASE_COLORS.tube}`,
-            }}>
-              <div style={{
-                fontSize: '14px',
-                fontWeight: 'bold',
-                marginBottom: '12px',
-                color: '#333333',
-                borderBottom: `1px solid ${MORANDI_BASE_COLORS.backboneLink}`,
-                paddingBottom: '8px',
-              }}>
-                {t('Nucleotide Legend')}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {Object.entries(NUCLEOTIDE_MORANDI_COLORS).map(([type, color]) => (
-                  <div key={type} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{
-                      width: '20px',
-                      height: '20px',
-                      borderRadius: '50%',
-                      backgroundColor: color,
-                      border: `2px solid ${MORANDI_BASE_COLORS.nodeBorder}`,
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                    }} />
-                    <span style={{ fontSize: '13px', color: '#333333', fontWeight: '500' }}>
-                      {type}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div style={{
-                marginTop: '12px',
-                paddingTop: '8px',
-                borderTop: `1px solid ${MORANDI_BASE_COLORS.backboneLink}`,
-                fontSize: '11px',
-                color: '#666666',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <div style={{
-                    width: '24px',
-                    height: '3px',
-                    backgroundColor: MORANDI_BASE_COLORS.backboneLink,
-                  }} />
-                  <span>{t('Backbone')}</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{
-                    width: '24px',
-                    height: '3px',
-                    backgroundColor: MORANDI_BASE_COLORS.pairingLink,
-                  }} />
-                  <span>{t('Pairing')}</span>
-                </div>
-              </div>
-            </div>
           </>
         )}
+      </div>
+
+      {/* Nucleotide Legend - Horizontal below 3D model */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexWrap: 'wrap',
+        gap: '16px 24px',
+        padding: '12px 16px',
+        marginTop: '12px',
+        background: 'rgba(244, 241, 234, 0.95)',
+        borderRadius: '8px',
+        border: `1px solid ${MORANDI_BASE_COLORS.tube}`,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+      }}>
+        <span style={{
+          fontSize: '13px',
+          fontWeight: 'bold',
+          color: '#333333',
+          marginRight: '8px',
+        }}>
+          {t('Nucleotide Legend')}
+        </span>
+        {Object.entries(NUCLEOTIDE_MORANDI_COLORS).map(([type, color]) => (
+          <div key={type} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{
+              width: '16px',
+              height: '16px',
+              borderRadius: '50%',
+              backgroundColor: color,
+              border: `2px solid ${MORANDI_BASE_COLORS.nodeBorder}`,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            }} />
+            <span style={{ fontSize: '12px', color: '#333333', fontWeight: '500' }}>
+              {type}
+            </span>
+          </div>
+        ))}
+        <div style={{ width: '1px', height: '16px', background: MORANDI_BASE_COLORS.backboneLink, margin: '0 4px' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ width: '20px', height: '3px', backgroundColor: MORANDI_BASE_COLORS.backboneLink }} />
+          <span style={{ fontSize: '12px', color: '#333333' }}>{t('Backbone')}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ width: '20px', height: '3px', backgroundColor: MORANDI_BASE_COLORS.pairingLink }} />
+          <span style={{ fontSize: '12px', color: '#333333' }}>{t('Pairing')}</span>
+        </div>
       </div>
     </div>
   );

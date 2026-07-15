@@ -1,3 +1,38 @@
+/**
+ * en.ts - 英文 i18n 文案 / English i18n strings
+ *
+ * i18next 文案资源:键值对,key 与 zh.ts 保持一致(便于运行时切换语言)。覆盖主
+ * 页、提交、分类、注意力、GCN、IG、模型图、错误提示等所有可见文本。 / i18next
+ * resource: key-value map, keys aligned with zh.ts (for runtime locale switch).
+ * Covers all visible text: home, submit, classification, attention, GCN, IG,
+ * model architecture, error messages, etc.
+ *
+ * 功能模块 / Modules:
+ * - translation: 顶级命名空间 / top-level namespace
+ * - 各功能模块的 key → 英文文案 / per-feature keys
+ *
+ * 输入 / Inputs:
+ * - 无(纯数据模块)/ None, pure data module
+ *
+ * 输出 / Outputs:
+ * - en: { translation: { ... } } - i18next 资源 / i18next resource
+ *
+ * 数据流 / Data Flow:
+ * 1. i18next 初始化时加载本模块 / Loaded by i18next on init
+ * 2. 组件调用 t('key') 时返回对应英文 / t('key') returns the English string
+ *
+ * 相关文件 / Related Files:
+ * - 调用 / Calls: 无 / None
+ * - 被调用 / Called by: i18n 初始化代码、各组件的 t() 调用 / i18n init, components via t()
+ *
+ * 使用示例 / Usage Example:
+ *     import { en } from '@/lib/i18n/en';
+ *     i18n.addResourceBundle('en', 'translation', en.translation);
+ *     // 组件: t('Submit')
+ *
+ * 作者 / Author: 项目组 / Project Team
+ * 版本 / Version: 1.0
+ */
 export const en = {
   translation: {
     'RNA Visualization': 'RNA Visualization',
@@ -159,5 +194,29 @@ export const en = {
     'Nucleotide Legend': 'Nucleotide Legend',
     'Backbone': 'Backbone',
     'Pairing': 'Pairing',
+    // Compare page translations
+    'Model Performance Comparison': 'Model Performance Comparison',
+    'Compare Page': 'Compare Page',
+    'Compare model performance': 'Compare model performance',
+    'Bar Chart': 'Bar Chart',
+    'Loading comparison data...': 'Loading comparison data...',
+    'Failed to load comparison data': 'Failed to load comparison data',
+    // New heatmap page translations
+'DCPRES Classification': 'DCPRES Classification',
+'DCPRES Classification Performance': 'DCPRES Classification Performance',
+    // Localization translations
+    'Localization': 'Localization',
+    'Localization Performance': 'Localization Performance',
+    'Reference': 'Reference',
+    // Loc Comparison translations
+    'Loc Comparison': 'Loc Comparison',
+    'Localization Model Comparison': 'Localization Model Comparison',
+    // UMAP translations
+    'UMAP Visualization': 'UMAP Visualization',
+    'CORA UMAP Visualization': 'CORA UMAP Visualization',
+    'Total points': 'Total points',
+    'Per class': 'Per class',
+    'Loading UMAP data...': 'Loading UMAP data...',
+    'Failed to load UMAP data': 'Failed to load UMAP data',
   },
 };

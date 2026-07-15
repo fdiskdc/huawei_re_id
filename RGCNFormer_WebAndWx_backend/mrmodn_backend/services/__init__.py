@@ -1,1 +1,1 @@
-"""Business logic services (prediction, RNA structure, model inspection)."""
+"""Services used by optional visualization endpoints."""

@@ -8,7 +8,7 @@ from typing import Any
 
 import torch
 
-from mrmodn_backend.core.config import config
+from config import config
 from mrmodn_backend.models.reid_runtime import get_reid_model, get_reid_runtime
 from mrmodn_backend.services.reid_dataset import ReIDSample, dataset_service
 

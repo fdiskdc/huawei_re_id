@@ -5,6 +5,15 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>RNA Visualization</title>
+    <!-- Polyfill GPUShaderStage for browsers without WebGPU support -->
+    <!-- three-render-objects imports three/webgpu at module top-level,
+         which references GPUShaderStage.VERTEX/FRAGMENT/COMPUTE.
+         Without this polyfill, non-WebGPU browsers crash on load. -->
+    <script>
+      if (typeof GPUShaderStage === 'undefined') {
+        window.GPUShaderStage = { VERTEX: 1, FRAGMENT: 2, COMPUTE: 4 };
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

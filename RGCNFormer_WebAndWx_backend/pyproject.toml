@@ -1,7 +1,7 @@
 [project]
-name = "mrmodn-backend"
+name = "rgcnformer-cluster-backend"
 version = "1.0.0"
-description = "mRModN RNA Classification Backend Service"
+description = "RGCNFormer Cluster backend with ReID visualization"
 requires-python = ">=3.11,<3.12"
 dependencies = [
     "flask>=2.0.0",
@@ -26,11 +26,16 @@ export = [
     "onnx",
 ]
 
-[tool.uv]
-extra-index-url = [
-    "https://download.pytorch.org/whl/cpu",
-]
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+
+[[tool.uv.index]]
+name = "aliyun"
+url = "https://mirrors.aliyun.com/pypi/simple/"
+default = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --tb=short"
+pythonpath = ["."]

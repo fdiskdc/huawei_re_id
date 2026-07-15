@@ -11,7 +11,7 @@ import numpy as np
 import torch
 from PIL import Image
 
-from mrmodn_backend.core.config import config
+from config import config
 
 
 VISIBLE_CAMERAS = (1, 2, 4, 5)

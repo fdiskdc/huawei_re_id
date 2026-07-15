@@ -8,7 +8,7 @@ from typing import Any
 
 import torch
 
-from mrmodn_backend.core.config import config
+from config import config
 from mrmodn_backend.models.reid import CNNTransformerReID, load_pretrained_reid
 
 

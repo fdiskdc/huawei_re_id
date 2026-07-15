@@ -1,8 +1,47 @@
-# DEPRECATED: This file is no longer used.
-# Configuration is now handled by mrmodn_backend/core/config.py
-# which reads REDIS_HOST from environment variables.
 """
-Configuration management for mRModN backend.
+config_docker.py - 后端配置管理(Docker 环境) / Backend config (Docker)
+
+与 config.py 结构相同,但默认 REDIS_HOST='redis'(docker-compose 中的服务名)而非
+'localhost',并增加了 WX_APPID / WX_SECRET 用于微信登录。在 Docker 容器中跑
+时使用。 / Same as config.py but defaults REDIS_HOST to 'redis' (the docker-compose
+service name) instead of 'localhost', and adds WX_APPID / WX_SECRET for WeChat
+login. Use when running inside Docker.
+
+功能模块 / Modules:
+- Config 类:同 config.py,默认 docker 网络下的 redis 服务名 / Config class
+- get_logger(name): 统一 logger / unified logger
+- WX_APPID / WX_SECRET: 微信小程序登录凭证 / WeChat mini-program login credentials
+
+输入 / Inputs:
+- 环境变量:同 config.py + WX_APPID + WX_SECRET / env vars
+
+输出 / Outputs:
+- config: Config 单例 / Config singleton
+- logger: 日志 / logger
+
+数据流 / Data Flow:
+1. 实例化时读环境变量 / Read env on init
+2. 校验 WX_APPID / WX_SECRET 是否配置 / Validate WeChat credentials
+3. 被 Docker 容器中各模块使用 / Used by modules in Docker
+
+相关文件 / Related Files:
+- 调用 / Calls: os.getenv、logging
+- 被调用 / Called by: server.py(Docker 模式)、tasks_docker.py、wx-login 路由
+
+使用示例 / Usage Example:
+    # 在 docker-compose 中设置环境变量:
+    environment:
+      - REDIS_HOST=redis
+      - WX_APPID=wx...
+      - WX_SECRET=...
+    from config_docker import config
+
+作者 / Author: 项目组 / Project Team
+版本 / Version: 1.0
+"""
+
+"""
+Configuration management for RGCNFormer backend.
 
 Loads settings from environment variables with sensible defaults.
 """
@@ -50,6 +89,25 @@ class Config:
         self.MODEL_CONFIG_PATH = os.getenv('MODEL_CONFIG_PATH', 'json/human.json')
         self.MODEL_DEVICE = os.getenv('MODEL_DEVICE', 'cpu')
         self.MODEL_TARGET_LENGTH = int(os.getenv('MODEL_TARGET_LENGTH', 1001))
+
+        # ReID body-heatmap visualization (CPU only)
+        project_root = os.path.dirname(os.path.abspath(__file__))
+        self.REID_CHECKPOINT_PATH = os.getenv(
+            'REID_CHECKPOINT_PATH',
+            os.path.abspath(os.path.join(project_root, '..', 'outputs', 'best.pt')),
+        )
+        self.REID_DATA_ROOT = os.getenv(
+            'REID_DATA_ROOT',
+            os.path.abspath(os.path.join(project_root, '..', 'SYSU-MM01')),
+        )
+        self.REID_DEVICE = os.getenv('REID_DEVICE', 'cpu')
+        self.REID_BATCH_SIZE = 4
+        self.REID_HEATMAP_SIZE = (9, 5)
+        self.REID_DISPLAY_SIZE = 256
+        self.REID_TORCH_NUM_THREADS = int(os.getenv('REID_TORCH_NUM_THREADS', '4'))
+        self.REID_CACHE_SIZE = int(os.getenv('REID_CACHE_SIZE', '8'))
+        if self.REID_DEVICE.lower() != 'cpu':
+            raise ValueError('ReID visualization only supports REID_DEVICE=cpu')
 
         # Server Configuration
         self.FLASK_HOST = os.getenv('FLASK_HOST', '0.0.0.0')
@@ -99,6 +157,33 @@ class Config:
 
         # Default Top-K
         self.DEFAULT_TOP_K = int(os.getenv('DEFAULT_TOP_K', 3))
+
+        # Model Comparison CSV Configuration
+        self.MODEL_COMPARISON_CSV_DIR = os.getenv(
+            'MODEL_COMPARISON_CSV_DIR',
+            os.path.join(os.path.dirname(__file__), 'data')
+        )
+        self.MODEL_COMPARISON_FILES = {
+            'ModX': 'modx_res.csv',
+            'MultiRM': 'multirm_res.csv',
+            'DCPRES': 'res.csv',
+        }
+
+        # Dataset Comparison Excel File
+        self.DATASET_COMPARISON_XLSX = os.getenv(
+            'DATASET_COMPARISON_XLSX',
+            os.path.join(os.path.dirname(__file__), 'data', 'CORA-CITE-AMAP-BAT-EAT.xlsx')
+        )
+
+        # UMAP Visualization Data Paths
+        self.UMAP_DATA_PATH = os.getenv(
+            'UMAP_DATA_PATH',
+            os.path.join(os.path.dirname(__file__), 'data', 'umap_human_data.json')
+        )
+        self.UMAP_CORA_DATA_PATH = os.getenv(
+            'UMAP_CORA_DATA_PATH',
+            os.path.join(os.path.dirname(__file__), 'data', 'umap_cora_data.json')
+        )
 
     def setup_logging(self, name: str = None, log_file: str = None) -> logging.Logger:
         """

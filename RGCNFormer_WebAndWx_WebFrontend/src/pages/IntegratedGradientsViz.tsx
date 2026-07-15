@@ -1,3 +1,47 @@
+/**
+ * IntegratedGradientsViz.tsx - Integrated Gradients 归因 + 3D 节点贡献 / IG attribution
+ *
+ * /integrated-gradients 路由页面。展示 Integrated Gradients(IG)对当前序列的归因:
+ *   - 用户选择 targetClassId(0-11,即 12 类修饰)
+ *   - 后端 fetchIntegratedGradients 返回每个位置的归因分
+ *   - 前端用 react-force-graph-3d 把归因分映射到 3D 节点(节点大小/颜色 = |归因|)
+ * 可调参数:Top N Nodes 高亮、targetClassId、序列输入。
+ * Page mounted at /integrated-gradients. Shows Integrated Gradients (IG) attribution for
+ * the current sequence:
+ *   - User selects targetClassId (0-11, the 12 modification classes)
+ *   - Backend fetchIntegratedGradients returns per-position attribution scores
+ *   - Frontend maps the scores to 3D nodes (size/color = |attribution|)
+ * Parameters: Top N nodes to highlight, targetClassId, sequence input.
+ *
+ * 功能模块 / Modules:
+ * - 目标类下拉(Select, 0-11)/ Target-class dropdown
+ * - IG 归因分获取(fetchIntegratedGradients)/ Fetch IG scores
+ * - 3D 节点归因映射(react-force-graph-3d)/ 3D node attribution map
+ * - Top N 节点高亮 / Top-N node highlight
+ *
+ * 输入 / Inputs:
+ * - useRna().rnaSequence: 当前序列
+ * - targetClassId: number(0-11)/ target class index
+ * - topN: number / number of top nodes to highlight
+ *
+ * 输出 / Outputs:
+ * - JSX.Element 3D 节点归因图 / 3D node attribution graph JSX
+ *
+ * 数据流 / Data Flow:
+ * 1. 用户选 targetClassId + 调 fetchIntegratedGradients
+ * 2. 拿到 attribution[L] + graph nodes/edges
+ * 3. 把 |attribution| 映射到节点 size/color
+ * 4. 渲染 3D 图,hover 显示位置 + 归因分
+ *
+ * 相关文件 / Related Files:
+ * - 调用 / Calls: lib/api.ts(fetchIntegratedGradients)、context/RnaContext
+ * - 被调用 / Called by: App.tsx(<Route path="/integrated-gradients">)
+ * - 关联 / Related: AttentionViz.tsx(类似可视化,不同归因法)
+ *
+ * 使用示例 / Usage Example:
+ *   <Route path="/integrated-gradients" element={<IntegratedGradientsViz />} />
+ *   // 浏览器 /mrmodn/integrated-gradients
+ */
 import React, { useState, useEffect, useRef } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
 import { Spin, Alert, InputNumber, Select, Button, Space, Card, Typography } from 'antd';
@@ -31,22 +75,23 @@ interface GraphData {
 }
 
 const DESKTOP_BREAKPOINT = 768;
-const SIDER_WIDTH_EXPANDED = 200;
-const SIDER_WIDTH_COLLAPSED = 80;
-const CONTENT_PADDING = 40;
 
 const CLASS_NAMES = [
   'Am (0)', 'Atol (1)', 'Cm (2)', 'Gm (3)', 'Tm (4)', 'Y (5)',
   'ac4C (6)', 'm1A (7)', 'm5C (8)', 'm6A (9)', 'm6Am (10)', 'm7G (11)'
 ];
 
-const IntegratedGradientsViz: React.FC = () => {
+interface IntegratedGradientsVizProps {
+  data?: GraphData;
+}
+
+const IntegratedGradientsViz: React.FC<IntegratedGradientsVizProps> = ({ data: propData }) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [gcnData, setGcnData] = useState<GraphData | null>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-  const [isDesktop, setIsDesktop] = useState(window.innerWidth > DESKTOP_BREAKPOINT);
+  const [isDesktop] = useState(window.innerWidth > DESKTOP_BREAKPOINT);
   const [topN, setTopN] = useState<number>(10);
   const [targetClassId, setTargetClassId] = useState<number | null>(null);
   const [hasComputed, setHasComputed] = useState(false);
@@ -61,7 +106,6 @@ const IntegratedGradientsViz: React.FC = () => {
   const topNodeIds = React.useMemo(() => {
     if (!gcnData || !hasComputed) return new Set<string>();
 
-    // Sort nodes by absolute attribution score and get top N IDs
     const sortedNodes = [...gcnData.nodes]
       .sort((a: any, b: any) => Math.abs(b.data?.attributionScore || 0) - Math.abs(a.data?.attributionScore || 0))
       .slice(0, topN);
@@ -69,28 +113,46 @@ const IntegratedGradientsViz: React.FC = () => {
     return new Set(sortedNodes.map((node: Node) => node.id));
   }, [gcnData, hasComputed, topN]);
 
+  // Process propData when provided (for Modal usage)
+  useEffect(() => {
+    if (propData) {
+      const graphData = propData;
+      if (graphData.nodes) {
+        graphData.nodes.forEach((node: any) => {
+          node.label = node.id;
+          if (!node.x) node.x = 0;
+          if (!node.y) node.y = 0;
+          if (!node.z) node.z = 0;
+        });
+      }
+
+      if (graphData.edges && graphData.nodes) {
+        const nodeMap = new Map<string, Node>();
+        graphData.nodes.forEach((node: Node) => {
+          nodeMap.set(node.id, node);
+        });
+        graphData.edges.forEach((link: any) => {
+          if (typeof link.source === 'string') {
+            link.source = nodeMap.get(link.source);
+          }
+          if (typeof link.target === 'string') {
+            link.target = nodeMap.get(link.target);
+          }
+        });
+      }
+
+      setGcnData(graphData);
+      setHasComputed(true);
+    }
+  }, [propData]);
+
   // Update container size on window resize
   useEffect(() => {
     const updateSize = () => {
       if (!containerRef.current) return;
 
-      const windowWidth = window.innerWidth;
-      const windowHeight = window.innerHeight;
-      const desktop = windowWidth > DESKTOP_BREAKPOINT;
-      setIsDesktop(desktop);
-
-      let availableWidth = windowWidth;
-      if (desktop) {
-        const siderElement = document.querySelector('.ant-layout-sider');
-        const isCollapsed = siderElement?.classList.contains('ant-layout-sider-collapsed');
-        const sidebarWidth = isCollapsed ? SIDER_WIDTH_COLLAPSED : SIDER_WIDTH_EXPANDED;
-        availableWidth = windowWidth - sidebarWidth;
-      }
-
-      availableWidth -= CONTENT_PADDING;
-      const availableHeight = windowHeight - CONTENT_PADDING;
-
-      setContainerSize({ width: availableWidth, height: availableHeight });
+      const rect = containerRef.current.getBoundingClientRect();
+      setContainerSize({ width: rect.width, height: rect.height });
     };
 
     updateSize();
@@ -205,13 +267,13 @@ const IntegratedGradientsViz: React.FC = () => {
     return `rgb(${r}, ${g}, ${b})`; // 关键节点完全不透明，颜色深沉
   };
 
-  if (!rnaSequence) {
+  if (!propData && !rnaSequence) {
     return (
       <Alert
         message={t('Error')}
         description={
           <>
-            {t('Please enter an RNA sequence.')} <Link to="/">{t('Return to Home')}</Link>
+            {t('Please enter an RNA sequence.')} <Link to="/classic">{t('Return to Home')}</Link>
           </>
         }
         type="error"
@@ -231,7 +293,8 @@ const IntegratedGradientsViz: React.FC = () => {
       </Card>
 
       <Space direction="vertical" style={{ width: '100%' }} size="large">
-        {/* Control Panel */}
+        {/* Control Panel - hidden when propData is provided */}
+        {!propData && (
         <Card title={t('Integrated Gradients Controls')}>
           <Space wrap>
             <span>{t('Target Class ID:')}</span>
@@ -258,6 +321,7 @@ const IntegratedGradientsViz: React.FC = () => {
             </Button>
           </Space>
         </Card>
+        )}
 
         {/* Graph Visualization */}
         <Card>
@@ -329,6 +393,11 @@ const IntegratedGradientsViz: React.FC = () => {
                 backgroundColor="#F8F9F9"
                 enableNodeDrag={true}
                 cooldownTicks={200}
+                onEngineStop={() => {
+                  if (graphRef.current) {
+                    graphRef.current.zoomToFit(400);
+                  }
+                }}
               />
             )}
           </div>

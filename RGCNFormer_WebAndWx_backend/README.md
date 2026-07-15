@@ -1,132 +1,178 @@
-# mRModN_WebAndWx_backend
+# Cluster 可视化系统后端 / Cluster Visualization Backend
 
-[中文](#中文) | [English](#english)
+## 项目背景 / Project Background
 
----
+本项目是 RGCNFormer RNA 修饰分类系统的**后端服务**,为网页前端与微信小程序提供 HTTP API、模型推理、异步任务调度以及 RNA 二级结构预测能力。
 
-<a name="中文"></a>
-# mRModN RNA 分类后端服务
+This project is the **backend service** of the RGCNFormer RNA modification classification system, providing HTTP API, model inference, async task scheduling, and RNA secondary structure prediction for the web frontend and WeChat mini-program.
 
-## 项目简介
+## 项目作用 / Purpose
 
-mRModN_WebAndWx_backend 是一个基于深度学习的 RNA 序列分类后端服务，使用图卷积网络（GCN）和类查询注意力机制实现 RNA 序列的 12 类多标签分类。支持 Web 应用和微信小程序两种前端接入方式，并提供丰富的模型可解释性功能。
+**核心能力** / **Core capabilities**:
+- 接收前端提交的 RNA 序列,触发模型推理(单条或批量)
+- Accept RNA sequences from frontend, trigger model inference (single or batch)
+- 提供同步(ONNX)与异步(Celery)两种推理模式
+- Provide both synchronous (ONNX) and asynchronous (Celery) inference modes
+- 集成 LinearFold 进行 RNA 二级结构预测
+- Integrate LinearFold for RNA secondary structure prediction
+- 提供可视化所需的注意力权重、定位概率、分类结果等数据
+- Expose attention weights, localization probabilities, and classification results for visualization
 
-## 主要特性
+## 技术栈 / Tech Stack
 
-- **RNA 序列分类**：支持 12 类 RNA 修饰分类任务
-- **深度学习模型**：结合多尺度 CNN、GCN 和 Class-Query Attention
-- **异步处理**：使用 Celery 实现任务队列和后台处理
-- **缓存机制**：Redis 缓存提升响应速度
-- **模型可解释性**：Integrated Gradients 和 GCN 聚合可视化
-- **微信小程序支持**：完整的用户登录和任务提交接口
-- **Docker 支持**：一键部署，开箱即用
+- Python 3.8+
+- Flask + Gunicorn(WSGI HTTP 服务)/ Flask + Gunicorn (WSGI HTTP server)
+- Celery + Redis(异步任务队列)/ Celery + Redis (async task queue)
+- ONNX Runtime(模型推理)/ ONNX Runtime (model inference)
+- PyTorch(模型定义与训练导出)/ PyTorch (model definition & training export)
+- LinearFold(第三方 C++ 库,RNA 二级结构)/ LinearFold (3rd-party C++ lib, RNA secondary structure)
+- Docker / docker-compose(容器化部署)/ Docker (containerized deployment)
 
-## 项目结构
+## 目录结构 / Directory Layout
 
 ```
-mRModN_WebAndWx_backend/
-├── mrmodn_backend/             # 主应用包 / Main application package
-│   ├── __init__.py                # 包初始化 / Package init
-│   ├── app.py                     # Flask 应用工厂 / Flask app factory
-│   ├── core/                      # 核心配置模块 / Core configuration
-│   │   ├── config.py              # 统一配置管理 / Unified config
-│   │   ├── constants.py           # RNA 分类常量 / RNA classification constants
-│   │   └── paths.py               # 资源路径解析 / Resource path resolution
-│   ├── models/                    # 模型定义 / Model definitions
-│   │   ├── mrmodn.py          # 主模型 (RNA_ClassQuery_Model) / Main model
-│   │   ├── onnx_compatible.py     # ONNX 导出版本 / ONNX export version
-│   │   └── runtime.py             # 模型加载工具 / Model loading utilities
-│   ├── services/                  # 业务逻辑层 / Business logic
-│   │   ├── prediction.py          # 预测预处理 / Prediction preprocessing
-│   │   ├── rna_structure.py       # RNA 二级结构（LinearFold）/ RNA secondary structure
-│   │   └── model_inspection.py    # 模型结构检查 / Model inspection
-│   ├── api/                       # Flask API 路由 / Flask API routes
-│   │   ├── health.py              # 健康检查 / Health check
-│   │   ├── prediction.py          # 预测接口 / Prediction endpoints
-│   │   ├── wechat.py              # 微信登录 / WeChat login
-│   │   └── explainability.py      # 模型可解释性 / Model explainability
-│   ├── data/                      # 数据集 / Dataset
-│   │   └── human.py               # Mer100Dataset (PyG) / Human RNA dataset
-│   ├── training/                  # 训练相关 / Training utilities
-│   │   ├── engine.py              # 训练/评估引擎 / Training/eval engine
-│   │   ├── sampling.py            # 平衡采样器 / Balanced samplers
-│   │   └── metrics.py             # 评估指标 / Evaluation metrics
-│   └── workers/                   # Celery 任务 / Celery tasks
-│       └── tasks.py               # 异步预测任务 / Async prediction tasks
-├── LinearFold/                    # RNA 二级结构预测工具（外部依赖，不可修改）
-├── json/                          # 配置和数据文件
-│   ├── human.json                 # 模型标签映射配置
-│   └── model_graph.json           # 模型计算图
-├── wsgi.py                        # WSGI 入口（Gunicorn）
-├── main.py                        # 开发服务器入口
-├── Dockerfile                     # Docker 构建文件
-├── docker-compose.yml             # Docker 编排文件
-├── pyproject.toml                 # Python 依赖声明（uv）
-├── uv.lock                        # 依赖锁定文件
-├── .python-version                # Python 版本约束
-└── .env.example                   # 环境变量模板
+Cluster_WebAndWx_backend/
+├── server.py               # Flask HTTP API 入口(主路由)
+├── main_model.py           # PyTorch 模型推理
+├── main_model_onnx.py      # ONNX Runtime 推理变体
+├── common.py               # 公共常量与工具
+├── human.py                # Human RNA 数据集处理(序列解析、k-mer、构图)
+├── tasks.py                # Celery 异步任务
+├── tasks_docker.py         # Docker 环境下的 Celery 任务变体
+├── config.py               # 路径、端口、模型路径等配置
+├── config_docker.py        # Docker 环境下的配置变体
+├── wsgi.py                 # WSGI 入口(Gunicorn 加载)
+├── onnx.py                 # PyTorch → ONNX 导出脚本
+├── onnx2.py                # ONNX 导出变体(支持更多模型)
+├── check.py                # LinearFold edge 诊断脚本
+├── check_speed.py          # CPU 推理速度基准测试
+├── test_cache.py           # Redis 缓存 + SHA256 jobId 测试
+├── Dockerfile              # Docker 镜像构建
+├── docker-compose.yml      # 多服务编排(backend + celery + redis)
+├── .env.example            # 环境变量示例
+├── requirements.txt        # Python 依赖
+├── start_backend.sh        # 一键启动脚本
+├── stop_backend.sh         # 停止脚本
+├── run_docker.sh           # Docker 启动脚本
+├── epoch_040.pt            # 已训练模型权重(13.8 MB)
+├── data/                   # 运行时数据
+├── json/                   # 缓存/中间结果(JSON)
+└── LinearFold/             # 第三方 RNA 二级结构预测库(子模块)
+    ├── src/                # C++ 源码
+    └── gflags.py           # 参数解析
 ```
 
-## LinearFold 保护声明
+## 启动方式 / Getting Started
 
-> **`LinearFold/` 目录为外部 C++ 依赖，属于第三方工具。请勿修改该目录下的任何文件。** 所有项目自有代码位于 `mrmodn_backend/` 包内。
->
-> **The `LinearFold/` directory is an external C++ dependency (third-party tool). Do NOT modify any files in this directory.** All project-owned code resides in the `mrmodn_backend/` package.
+### 方式一:本地直接运行(开发模式) / Option 1: Local Dev Run
 
-## 快速开始
+#### 1. 环境要求 / Prerequisites
+- Python 3.8+
+- Redis(异步任务需要)/ Redis (for async tasks)
+- 已训练模型权重(默认 `epoch_040.pt`)
 
-### 环境要求
-
-- Python 3.11+
-- [uv](https://docs.astral.sh/uv/)（Python 包管理器）
-- Redis 服务器
-- Docker（推荐）
-
-### 方法 1：使用 Docker（推荐）
-
+#### 2. 安装依赖 / Install
 ```bash
-git clone https://github.com/fdiskdc/mRModN_WebAndWx_backend.git
-cd mRModN_WebAndWx_backend
+cd Cluster_WebAndWx_backend
+pip install -r requirements.txt
+```
 
-# 复制并编辑环境变量 / Copy and edit environment variables
+#### 3. 配置环境变量 / Configure
+```bash
 cp .env.example .env
+# 编辑 .env,设置:
+#   REDIS_HOST=localhost
+#   MODEL_PATH=./epoch_040.pt
+#   LINEARFOLD_PATH=./LinearFold/bin/
+```
 
-# 构建并启动服务 / Build and start services
+#### 4. 启动后端 / Start Backend
+```bash
+# 方式 a: 一键脚本 / one-click script
+./start_backend.sh
+
+# 方式 b: 手动 / manual
+# 终端 1: 启动 Redis / start redis
+redis-server
+
+# 终端 2: 启动 Flask(Gunicorn)/ start flask
+gunicorn -c gunicorn.conf.py wsgi:app
+
+# 终端 3: 启动 Celery worker / start celery
+celery -A tasks worker --loglevel=info
+```
+
+停止:/ Stop:
+```bash
+./stop_backend.sh
+```
+
+### 方式二:Docker 部署(生产模式) / Option 2: Docker Production
+
+```bash
+cd Cluster_WebAndWx_backend
+./run_docker.sh
+# 或手动:
 docker-compose up -d
-
-# 查看日志 / View logs
-docker-compose logs -f
 ```
 
-### 方法 2：本地 Flask 开发服务器
+服务端口(默认):/ Ports (default):
+- Flask: 8000
+- Celery: 异步后台进程 / Celery: async background
+- Redis: 6379
 
-```bash
-uv sync --locked
+## 关键文件说明 / Key Files
 
-# 编译 LinearFold / Compile LinearFold
-cd LinearFold && make && cd ..
+| 文件 / File | 作用 / Purpose |
+|---|---|
+| `server.py` | Flask HTTP API 入口,提供 `/api/v1/submit-task`、`/api/v1/get-result`、`/api/v1/wx-login` 等路由;支持 IG、UMAP、注意力可视化接口 / Flask API entry with /api/v1/* routes, supports IG, UMAP, attention viz |
+| `main_model.py` | PyTorch 推理:加载 `epoch_040.pt`,运行 forward,返回 logits / 概率 / 注意力 / PyTorch inference: load weights, forward pass, return logits / probs / attention |
+| `main_model_onnx.py` | ONNX Runtime 推理(生产环境推荐,启动更快)/ ONNX inference (prod-recommended, faster startup) |
+| `common.py` | 公共常量(NUCLEOTIDE_MAP、k-mer 映射)、工具函数(softmax、序列编码) / Common constants, utilities (softmax, sequence encoding) |
+| `human.py` | Human RNA 数据处理:LinearFold 集成(`run_linearfold`)、二级结构构图(`build_edge_index_from_structure`)、`Mer100Dataset` / Human RNA data: LinearFold integration, structure-based graph construction |
+| `tasks.py` | Celery 异步任务:长时间推理任务(`run_prediction_task`),Redis 缓存结果 / Celery async tasks, Redis-cached results |
+| `tasks_docker.py` | Docker 环境下的 Celery 任务变体(REDIS_HOST 默认指向 docker 服务名 `redis`) / Docker-flavored Celery tasks |
+| `config.py` | 全局配置:模型路径、Redis 地址、LinearFold 路径、日志级别 / Global config: model path, Redis host, LinearFold path, log level |
+| `config_docker.py` | Docker 配置:`REDIS_HOST=redis`、容器内路径 / Docker config: `REDIS_HOST=redis`, container paths |
+| `wsgi.py` | WSGI 入口:Gunicorn 加载此文件 / WSGI entry loaded by Gunicorn |
+| `onnx.py` | PyTorch → ONNX → graph JSON 导出(供前端可视化)/ PyTorch → ONNX → graph JSON export |
+| `onnx2.py` | 第二种 ONNX 导出变体(`torch.jit.trace`)/ Second ONNX export variant |
+| `check.py` | LinearFold 边构建正确性诊断 / LinearFold edge construction diagnostic |
+| `check_speed.py` | CPU 推理速度基准(用于性能调优)/ CPU inference speed benchmark |
+| `test_cache.py` | Redis 缓存 + SHA256 jobId 一致性测试 / Redis cache + SHA256 jobId consistency test |
+| `epoch_040.pt` | 已训练模型权重 / Trained model weights |
 
-# 启动 Celery Worker / Start Celery Worker
-uv run celery -A mrmodn_backend.workers.mrmodn_backend.workers.tasks.celery_app worker --loglevel=info
+## API 端点(简述) / API Endpoints (Summary)
 
-# 启动 Flask 开发服务器 / Start Flask dev server
-uv run python main.py
-```
+| 方法 / Method | 路径 / Path | 作用 / Purpose |
+|---|---|---|
+| `POST` | `/api/v1/submit-task` | 提交单条推理任务 / Submit single inference task |
+| `POST` | `/api/v1/wx-submit-task` | 提交批量任务(微信端用)/ Submit batch task (WeChat) |
+| `GET`  | `/api/v1/get-result?jobId=xxx` | 同步查询任务结果 / Sync query task result |
+| `GET`  | `/api/v1/wx-get-result?jobId=xxx` | 微信端轮询 / WeChat polling |
+| `POST` | `/api/v1/wx-login` | 微信登录 / WeChat login |
+| `GET`  | `/api/v1/health` | 健康检查 / Health check |
+| `POST` | `/api/v1/ig` | Integrated Gradients 归因 / Integrated Gradients attribution |
+| `POST` | `/api/v1/umap` | UMAP 嵌入 / UMAP embedding |
 
-### 方法 3：Gunicorn 生产部署
+## 与其他项目的关系 / Relation to Other Projects
 
-```bash
-uv sync --locked
+- **rgcnformer_sum** - 模型训练与导出,`epoch_040.pt` 与 ONNX 模型由本项目加载 / Model training & export; weights loaded by this project
+- **Cluster_WebAndWx_WxFrontend** - 微信前端,调用 `/api/v1/wx-*` 接口 / WeChat frontend calling /api/v1/wx-* endpoints
+- **RGCNFormer_WebAndWx_WebFrontend** - 网页前端,调用 `/api/v1/*` 接口 / Web frontend calling /api/v1/* endpoints
 
-# 启动 Celery Worker / Start Celery Worker
-uv run celery -A mrmodn_backend.workers.mrmodn_backend.workers.tasks.celery_app worker --concurrency=1 --loglevel=info
+## 注意事项 / Notes
 
-# 使用 Gunicorn 启动 / Start with Gunicorn
-uv run gunicorn -w 1 -b 0.0.0.0:8000 --timeout 120 wsgi:app
-```
+- **LinearFold** 为第三方 C++ 库,需要编译(见其 `src/` 中的构建说明);如无需二级结构可跳过 / LinearFold is 3rd-party C++; compile per its README or skip if structure not needed
+- 启动前确保 `epoch_040.pt` 与 `config.py` 中的 `MODEL_PATH` 一致 / Ensure `epoch_040.pt` matches `MODEL_PATH` in `config.py`
+- Celery 需要 Redis 7+ / Celery requires Redis 7+
+- 生产环境建议使用 ONNX 推理(`main_model_onnx.py`),启动比 PyTorch 快 ~5× / In prod, prefer ONNX runtime (5× faster startup)
 
-## API 文档
+## 详细文档 / Detailed Documentation
 
+每个 .py 文件的顶部已添加**中英双语**功能说明,包含输入/输出/数据流/相关文件。/ Each .py file has a **bilingual** header with inputs/outputs/data flow/related files.
+
+## ReID 人体热力图 / ReID Body Heatmaps
 ### 基础接口 / Basic Endpoints
 
 | 方法 | 路径 | 说明 |

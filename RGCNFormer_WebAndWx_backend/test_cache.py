@@ -1,5 +1,41 @@
 #!/usr/bin/env python3
 """
+test_cache.py - Redis 缓存 + SHA256 jobId 一致性测试 / Redis cache + SHA256 jobId test
+
+测试脚本:验证同一条 RNA 序列在两次提交时,后端是否使用 SHA256 哈希作为 jobId 并
+命中 Redis 缓存(避免重复推理)。 / Test script: verifies that the same RNA
+sequence produces the same SHA256-based jobId and hits the Redis cache (avoiding
+redundant inference).
+
+功能模块 / Modules:
+- generate_sha256_hash(sequence): 计算序列 SHA256 / SHA256 of sequence
+- test_caching(): 主测试,提交两次相同序列,检查是否命中缓存 / Main test
+
+输入 / Inputs:
+- BASE_URL: 后端 URL(默认 localhost:8000) / Backend URL
+- TEST_SEQUENCE: 测试序列 / Test sequence
+
+输出 / Outputs:
+- 标准输出:cache MISS → cache HIT 的过程 / stdout: cache MISS → HIT flow
+
+数据流 / Data Flow:
+1. 第一次提交(预计 cache MISS)→ 推理 → 写缓存 / First submit: MISS, compute, write
+2. 第二次提交(预计 cache HIT)→ 立即返回缓存结果 / Second submit: HIT, return cache
+3. 对比两次响应与 jobId 是否一致 / Compare response & jobId
+
+相关文件 / Related Files:
+- 调用 / Calls: requests、hashlib、后端 /api/v1/submit-task 与 /get-result
+- 被调用 / Called by: 开发/CI 期手动运行 / Manual run during dev/CI
+
+使用示例 / Usage Example:
+    # 启动后端后:
+    python test_cache.py
+
+作者 / Author: 项目组 / Project Team
+版本 / Version: 1.0
+"""
+#!/usr/bin/env python3
+"""
 Test script to verify Redis caching and SHA256 hash-based task IDs.
 """
 import requests
@@ -30,7 +66,7 @@ def test_caching():
     print("\n--- First Request (should be cache MISS) ---")
     start_time = time.time()
     response1 = requests.post(
-        f"{BASE_URL}/mrmodn/api/v1/submit-task",
+        f"{BASE_URL}/api/v1/submit-task",
         json={
             "rnaSequence": TEST_SEQUENCE,
             "userId": "test_user"
@@ -61,7 +97,7 @@ def test_caching():
     print("\n--- Second Request (should be cache HIT) ---")
     start_time = time.time()
     response2 = requests.post(
-        f"{BASE_URL}/mrmodn/api/v1/submit-task",
+        f"{BASE_URL}/api/v1/submit-task",
         json={
             "rnaSequence": TEST_SEQUENCE,
             "userId": "test_user"
@@ -109,7 +145,7 @@ def test_caching():
     
     start_time = time.time()
     response3 = requests.post(
-        f"{BASE_URL}/mrmodn/api/v1/submit-task",
+        f"{BASE_URL}/api/v1/submit-task",
         json={
             "rnaSequence": different_sequence,
             "userId": "test_user"

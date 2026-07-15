@@ -1,3 +1,44 @@
+/**
+ * ModelViz.tsx - mRModN 模型架构图(react-flow + dagre)/ Model architecture diagram
+ *
+ * /model-viz 路由页面。使用 react-flow + dagre 自动布局渲染 mRModN 的
+ * 模型计算图(节点 = 各层 Conv1d / GCNBlock / Transformer / ClassQueryHead,
+ * 边 = 数据流方向)。节点和边数据由 fetchModelGraph 从后端拉取(后端从 ONNX 模型
+ * 解析得到 graph JSON)。提供 MiniMap 缩略图、Controls 缩放/平移、连线高亮。
+ * Page mounted at /model-viz. Uses react-flow + dagre auto-layout to render the
+ * mRModN compute graph (nodes = Conv1d/GCNBlock/Transformer/ClassQueryHead,
+ * edges = data flow). Nodes/edges are fetched via fetchModelGraph (backend parses
+ * the ONNX model into a graph JSON). Provides MiniMap, zoom/pan Controls, edge highlight.
+ *
+ * 功能模块 / Modules:
+ * - dagre 自动布局(自顶向下)/ dagre auto-layout (top-down)
+ * - react-flow 节点/边渲染 / react-flow node/edge rendering
+ * - MiniMap + Controls(缩放/平移)/ MiniMap + Controls
+ * - 自定义节点类型(可按层着色)/ Custom node types (per-layer color)
+ *
+ * 输入 / Inputs:
+ * - 后端 /api/v1/model-graph 返回 { nodes, edges } / Backend returns { nodes, edges }
+ * - dagre 布局参数(ranksep, nodesep, rankdir)/ dagre layout params
+ *
+ * 输出 / Outputs:
+ * - JSX.Element react-flow 画布 / react-flow canvas JSX
+ *
+ * 数据流 / Data Flow:
+ * 1. useEffect → fetchModelGraph() → 拿 graph JSON
+ * 2. dagre.layout(g) → 给每个节点计算 x/y
+ * 3. 转换 { nodes, edges } 为 react-flow 格式
+ * 4. setNodes / setEdges → react-flow 渲染
+ * 5. 用户拖拽 / 缩放 / 选中节点
+ *
+ * 相关文件 / Related Files:
+ * - 调用 / Calls: lib/api.ts(fetchModelGraph)、dagre、react-flow
+ * - 被调用 / Called by: App.tsx(<Route path="/model-viz">)
+ * - 关联 / Related: Cluster_WebAndWx_backend/onnx.py(graph JSON 导出)
+ *
+ * 使用示例 / Usage Example:
+ *   <Route path="/model-viz" element={<ModelViz />} />
+ *   // 浏览器 /mrmodn/model-viz
+ */
 import React, { useState, useEffect, useCallback } from 'react';
 import ReactFlow, {
   MiniMap,

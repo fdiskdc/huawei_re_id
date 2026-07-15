@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from flask import Blueprint, jsonify, send_file
 
-from mrmodn_backend.core.config import config, get_logger
+from config import config, get_logger
 from mrmodn_backend.models.reid_runtime import get_reid_model, get_reid_runtime
 from mrmodn_backend.services.reid_dataset import dataset_service
 from mrmodn_backend.services.reid_heatmap import STAGES, heatmap_service
 
 
-reid_bp = Blueprint("reid", __name__, url_prefix="/mrmodn/api/v1/reid")
+reid_bp = Blueprint("reid", __name__, url_prefix="/api/v1/reid")
 logger = get_logger("api.reid")
 
 
@@ -60,7 +60,7 @@ def get_reid_batch(batch_index: int):
         result = heatmap_service.generate_batch(split, batch_index)
         for sample in result["samples"]:
             sample["imageUrl"] = (
-                f"/rgcnformer/api/v1/reid/samples/{sample['sampleId']}/image"
+                f"/mrmodn/api/v1/reid/samples/{sample['sampleId']}/image"
             )
         return jsonify(result)
     except (KeyError, IndexError, ValueError) as exc:

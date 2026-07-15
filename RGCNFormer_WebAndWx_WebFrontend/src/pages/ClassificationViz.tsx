@@ -1,10 +1,52 @@
+/**
+ * ClassificationViz.tsx - 12 类修饰分类树(饼图 + 树形)/ 12-class classification tree
+ *
+ * /classification 之一(也可独立访问)。使用 ECharts 树图渲染 mRModN 12 类修饰
+ * 的分类预测结果:根节点 = 序列,子节点 = 12 类修饰(Am/Atol/Cm/Gm/Tm/Y/ac4C/m1A/
+ * m5C/m6A/m6Am/m7G),每类的概率按饼图切片大小展示。流程:用户输入序列 →
+ * submitTask → 轮询 getResult → resultData.classification。
+ * One of the /classification pages. Uses an ECharts tree to render mRModN's
+ * 12-class classification predictions: root = sequence, children = 12 modification
+ * classes (Am/Atol/Cm/Gm/Tm/Y/ac4C/m1A/m5C/m6A/m6Am/m7G); per-class probability is
+ * shown as a pie-slice size. Pipeline: user sequence → submitTask → poll getResult →
+ * resultData.classification.
+ *
+ * 功能模块 / Modules:
+ * - ECharts 树形图(tree layout)/ ECharts tree
+ * - 12 类修饰固定配色 / Fixed 12-class color palette
+ * - 概率 → 节点大小映射 / Probability → node size
+ * - 加载/错误态 / Loading/error states
+ *
+ * 输入 / Inputs:
+ * - useRna().rnaSequence: 当前序列
+ * - useRna().resultData.classification: 12 类概率数组
+ *
+ * 输出 / Outputs:
+ * - JSX.Element 树形分类图 / Tree classification JSX
+ *
+ * 数据流 / Data Flow:
+ * 1. 用户输入序列 → setRnaSequence
+ * 2. submitTask → 轮询 getResult
+ * 3. setResultData({ classification: [{name,value},...] })
+ * 4. ECharts tree data: [{ name: 'RNA', children: [{name, value}, ...] }]
+ * 5. 渲染树形 + tooltip
+ *
+ * 相关文件 / Related Files:
+ * - 调用 / Calls: lib/api.ts(submitTask, generateJobId)、context/RnaContext
+ * - 被调用 / Called by: App.tsx(<Route path="/classification">)
+ * - 关联 / Related: LocalizationViz.tsx(定位)、ResultsPage.tsx(结果聚合)
+ *
+ * 使用示例 / Usage Example:
+ *   <Route path="/classification" element={<ClassificationViz />} />
+ *   // 浏览器 /mrmodn/classification
+ */
 import React, { useState, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { Spin, Alert, Card, Typography } from 'antd';
 import { Link } from 'react-router-dom';
 import { useRna, type ClassificationResult } from '../context/RnaContext';
 import { useTranslation } from '../lib/i18n/LanguageContext';
-import { submitTask } from '../lib/api';
+import { submitTask, generateJobId } from '../lib/api';
 
 // 定义树节点类型
 interface TreeNode {
@@ -66,7 +108,7 @@ const ClassificationViz: React.FC<ClassificationVizProps> = ({ data: propData })
   // 用于存储请求过程中可能发生的错误
   const [error, setError] = useState<string | null>(null);
 
-  const { rnaSequence, setClassificationResults } = useRna();
+  const { rnaSequence, dataset, datasetIndex, setClassificationResults } = useRna();
 
   // 使用useEffect在组件加载后执行数据获取操作
   useEffect(() => {
@@ -135,22 +177,17 @@ const ClassificationViz: React.FC<ClassificationVizProps> = ({ data: propData })
       return;
     }
 
-    // Otherwise, fetch data from API using rnaSequence
-    if (!rnaSequence) {
-      setLoading(false);
-      setError(t('No RNA sequence provided.'));
-      return;
-    }
-    // 定义数据获取函数
+    // Otherwise, fetch data from API using dataset + datasetIndex
     const fetchData = async () => {
       try {
         const apiData = await submitTask({
-          jobId: crypto.randomUUID(),
+          jobId: generateJobId(),
           userId: 'user1',
-          rnaSequence: rnaSequence
+          rnaSequence: rnaSequence,
+          dataset: dataset,
+          datasetIndex: datasetIndex,
         });
 
-        // 从API数据中提取分类结果部分
         const chartData = apiData.classification;
 
         processDataAndSetResults(chartData);
@@ -159,13 +196,12 @@ const ClassificationViz: React.FC<ClassificationVizProps> = ({ data: propData })
         console.error("Failed to fetch or process data:", e);
         setError(t('Unable to load chart data: {message}').replace('{message}', e.message));
       } finally {
-        // 无论成功或失败，都结束加载状态
         setLoading(false);
       }
     };
 
     fetchData();
-      }, [propData, rnaSequence, setClassificationResults]);
+      }, [propData, rnaSequence, dataset, datasetIndex, setClassificationResults]);
 
   if (!propData && !rnaSequence) {
     return (
@@ -173,7 +209,7 @@ const ClassificationViz: React.FC<ClassificationVizProps> = ({ data: propData })
         message={t('Error')}
         description={
           <>
-            {t('Please enter an RNA sequence.')} <Link to="/">{t('Return to Home')}</Link>
+            {t('Please enter an RNA sequence.')} <Link to="/classic">{t('Return to Home')}</Link>
           </>
         }
         type="error"
