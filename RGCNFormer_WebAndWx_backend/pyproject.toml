@@ -1,0 +1,36 @@
+[project]
+name = "mrmodn-backend"
+version = "1.0.0"
+description = "mRModN RNA Classification Backend Service"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "flask>=2.0.0",
+    "flask-cors>=3.0.0",
+    "requests>=2.25.0",
+    "numpy>=1.20.0",
+    "captum>=0.4.0",
+    "celery>=5.2.0",
+    "redis>=4.0.0",
+    "gunicorn>=20.1.0",
+    "torch>=2.0.1",
+    "torch-geometric>=2.4.0",
+    "openpyxl>=3.1.0",
+    "pillow>=9.5.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+]
+export = [
+    "onnx",
+]
+
+[tool.uv]
+extra-index-url = [
+    "https://download.pytorch.org/whl/cpu",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"

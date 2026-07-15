@@ -1,0 +1,56 @@
+# ============================================================================
+# Docker Compose 编排文件 / Docker Compose orchestration file
+# 定义三个服务：Flask 后端、Celery Worker 和 Redis
+# Defines three services: Flask backend, Celery Worker, and Redis
+# ============================================================================
+
+services:
+  # Flask 后端服务 / Flask backend service
+  # 提供 REST API 接口，处理预测请求和微信登录 / Provides REST API for prediction requests and WeChat login
+  backend:
+    build: .
+    container_name: mrmodn_backend
+    command: uv run gunicorn -w 1 -b 0.0.0.0:8000 --timeout 120 wsgi:app
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - ${REID_DATA_ROOT:-/home/dc/vscode/re_id/SYSU-MM01}:/data/SYSU-MM01:ro
+    environment:
+      - UV_PROJECT_ENVIRONMENT=/opt/venv
+      - GUNICORN_WORKERS=${GUNICORN_WORKERS}
+      - WX_APPID=${WX_APPID}
+      - WX_SECRET=${WX_SECRET}
+      - REDIS_HOST=redis
+      - REID_DATA_ROOT=/data/SYSU-MM01
+      - REID_CHECKPOINT_PATH=/app/outputs/best.pt
+      - REID_DEVICE=cpu
+    restart: always
+    depends_on:
+      - redis
+
+  # Celery Worker 服务 / Celery Worker service
+  # 异步执行 RNA 预测任务 / Asynchronously executes RNA prediction tasks
+  worker:
+    build: .
+    container_name: mrmodn_worker
+    command: uv run celery -A mrmodn_backend.workers.tasks.celery_app worker --concurrency=1 --loglevel=info
+    volumes:
+      - .:/app
+    environment:
+      - UV_PROJECT_ENVIRONMENT=/opt/venv
+      - CELERY_CONCURRENCY=${CELERY_CONCURRENCY}
+      - REDIS_HOST=redis
+      - WX_APPID=${WX_APPID}
+      - WX_SECRET=${WX_SECRET}
+    restart: always
+    depends_on:
+      - redis
+      - backend
+
+  # Redis 服务（消息中间件和结果缓存）/ Redis service (message broker and result cache)
+  # 用于 Celery 消息队列和预测结果缓存 / Used for Celery message queue and prediction result caching
+  redis:
+    image: redis:alpine
+    container_name: mrmodn_redis
+    restart: always

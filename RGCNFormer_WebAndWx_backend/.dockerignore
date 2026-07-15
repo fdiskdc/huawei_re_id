@@ -1,0 +1,13 @@
+# .dockerignore
+.git
+__pycache__
+*.pyc
+*.log
+.venv
+.conda
+celery.pid
+celery.log
+gunicorn_access.log
+gunicorn_error.log
+.omc
+.omo

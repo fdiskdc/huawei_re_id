@@ -1,0 +1,46 @@
+# Python
+*.py[cod]
+*$py.class
+*.so
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs
+*.log
+gunicorn_*.log
+celery.log
+
+# PID files
+*.pid
+celery.pid
+
+# IDE
+/.vscode
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Model files
+*.pt
+*.pth
+*.onnx
+
+# Cache
+cache/
+*.npz
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Specific files
+wx_start_backend.sh

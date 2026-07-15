@@ -1,0 +1,209 @@
+{
+  "nodes": [
+    {
+      "id": "prim::GetAttr_0",
+      "label": "prim::GetAttr",
+      "inputs": [
+        "self.1"
+      ],
+      "outputs": [
+        "class_query_head"
+      ],
+      "attributes": {}
+    },
+    {
+      "id": "prim::GetAttr_1",
+      "label": "prim::GetAttr",
+      "inputs": [
+        "self.1"
+      ],
+      "outputs": [
+        "gcn_block"
+      ],
+      "attributes": {}
+    },
+    {
+      "id": "prim::GetAttr_2",
+      "label": "prim::GetAttr",
+      "inputs": [
+        "self.1"
+      ],
+      "outputs": [
+        "cnn_block"
+      ],
+      "attributes": {}
+    },
+    {
+      "id": "prim::CallMethod_0",
+      "label": "prim::CallMethod",
+      "inputs": [
+        "cnn_block",
+        "x.1"
+      ],
+      "outputs": [
+        "1151"
+      ],
+      "attributes": {}
+    },
+    {
+      "id": "prim::CallMethod_1",
+      "label": "prim::CallMethod",
+      "inputs": [
+        "gcn_block",
+        "1151",
+        "edge_index.1"
+      ],
+      "outputs": [
+        "1152"
+      ],
+      "attributes": {}
+    },
+    {
+      "id": "prim::Constant_0",
+      "label": "prim::Constant",
+      "inputs": [],
+      "outputs": [
+        "696"
+      ],
+      "attributes": {}
+    },
+    {
+      "id": "prim::Constant_1",
+      "label": "prim::Constant",
+      "inputs": [],
+      "outputs": [
+        "697"
+      ],
+      "attributes": {}
+    },
+    {
+      "id": "prim::ListConstruct_0",
+      "label": "prim::ListConstruct",
+      "inputs": [
+        "696",
+        "697"
+      ],
+      "outputs": [
+        "698"
+      ],
+      "attributes": {}
+    },
+    {
+      "id": "aten::view_0",
+      "label": "aten::view",
+      "inputs": [
+        "1152",
+        "698"
+      ],
+      "outputs": [
+        "node_features_flat"
+      ],
+      "attributes": {}
+    },
+    {
+      "id": "prim::CallMethod_2",
+      "label": "prim::CallMethod",
+      "inputs": [
+        "class_query_head",
+        "node_features_flat"
+      ],
+      "outputs": [
+        "1153"
+      ],
+      "attributes": {}
+    },
+    {
+      "id": "prim::TupleUnpack_0",
+      "label": "prim::TupleUnpack",
+      "inputs": [
+        "1153"
+      ],
+      "outputs": [
+        "1148",
+        "1149",
+        "1150"
+      ],
+      "attributes": {}
+    },
+    {
+      "id": "prim::TupleConstruct_0",
+      "label": "prim::TupleConstruct",
+      "inputs": [
+        "1148",
+        "1149",
+        "1150"
+      ],
+      "outputs": [
+        "913"
+      ],
+      "attributes": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_prim::GetAttr_2_prim::CallMethod_2_0",
+      "source": "prim::GetAttr_2",
+      "target": "prim::CallMethod_2"
+    },
+    {
+      "id": "edge_prim::GetAttr_1_prim::CallMethod_2_0",
+      "source": "prim::GetAttr_1",
+      "target": "prim::CallMethod_2"
+    },
+    {
+      "id": "edge_prim::CallMethod_0_prim::CallMethod_2_0",
+      "source": "prim::CallMethod_0",
+      "target": "prim::CallMethod_2"
+    },
+    {
+      "id": "edge_prim::Constant_0_prim::ListConstruct_0_0",
+      "source": "prim::Constant_0",
+      "target": "prim::ListConstruct_0"
+    },
+    {
+      "id": "edge_prim::Constant_1_prim::ListConstruct_0_0",
+      "source": "prim::Constant_1",
+      "target": "prim::ListConstruct_0"
+    },
+    {
+      "id": "edge_prim::CallMethod_1_aten::view_0_0",
+      "source": "prim::CallMethod_1",
+      "target": "aten::view_0"
+    },
+    {
+      "id": "edge_prim::ListConstruct_0_aten::view_0_0",
+      "source": "prim::ListConstruct_0",
+      "target": "aten::view_0"
+    },
+    {
+      "id": "edge_prim::GetAttr_0_prim::CallMethod_2_0",
+      "source": "prim::GetAttr_0",
+      "target": "prim::CallMethod_2"
+    },
+    {
+      "id": "edge_aten::view_0_prim::CallMethod_2_0",
+      "source": "aten::view_0",
+      "target": "prim::CallMethod_2"
+    },
+    {
+      "id": "edge_prim::CallMethod_2_prim::TupleUnpack_0_0",
+      "source": "prim::CallMethod_2",
+      "target": "prim::TupleUnpack_0"
+    },
+    {
+      "id": "edge_prim::TupleUnpack_0_prim::TupleConstruct_0_0",
+      "source": "prim::TupleUnpack_0",
+      "target": "prim::TupleConstruct_0"
+    },
+    {
+      "id": "edge_prim::TupleUnpack_0_prim::TupleConstruct_0_1",
+      "source": "prim::TupleUnpack_0",
+      "target": "prim::TupleConstruct_0"
+    },
+    {
+      "id": "edge_prim::TupleUnpack_0_prim::TupleConstruct_0_2",
+      "source": "prim::TupleUnpack_0",
+      "target": "prim::TupleConstruct_0"
+    }
+  ]
+}
