@@ -93,6 +93,7 @@ const App: React.FC = () => {
           <Route path="/classic/results/:jobId" element={<ResultsPage />} />
           <Route path="/nextgen" element={<WorkspacePage />} />
           <Route path="/nextgen/viz-display" element={<VizDisplayPage />} />
+          <Route path="/nextgen/reid" element={<ReidViz />} />
           <Route path="/nextgen/compare" element={<ComparePage />} />
         </Routes></Suspense>
       </QueryClientProvider>

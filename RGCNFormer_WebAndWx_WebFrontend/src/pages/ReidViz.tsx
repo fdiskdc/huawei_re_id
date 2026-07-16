@@ -23,6 +23,7 @@ import {
 import ReidHeatmapCanvas, {
   type ReidDisplayMode,
 } from '../components/reid/ReidHeatmapCanvas';
+import NpuTopMonitor from '../components/reid/NpuTopMonitor';
 import './ReidViz.css';
 
 const STAGE_LABELS: Record<ReidStage, string> = {
@@ -31,6 +32,13 @@ const STAGE_LABELS: Record<ReidStage, string> = {
   transformer_1: 'Transformer 2',
   classifier: 'Classifier Grad-CAM',
 };
+
+const STAGES: ReidStage[] = [
+  'position_embedding',
+  'transformer_0',
+  'transformer_1',
+  'classifier',
+];
 
 const DISPLAY_LABELS: Record<ReidDisplayMode, string> = {
   overlay: 'Overlay',
@@ -47,7 +55,6 @@ export default function ReidViz() {
   const [batch, setBatch] = useState<ReidBatchResponse | null>(null);
   const [split, setSplit] = useState<ReidSplit>('test');
   const [batchIndex, setBatchIndex] = useState(0);
-  const [stage, setStage] = useState<ReidStage>('classifier');
   const [displayMode, setDisplayMode] = useState<ReidDisplayMode>('overlay');
   const [opacity, setOpacity] = useState(0.55);
   const [playing, setPlaying] = useState(false);
@@ -133,6 +140,8 @@ export default function ReidViz() {
         {meta && <Tag color="blue">CPU · {meta.torchThreads} threads · 9×5 tokens</Tag>}
       </div>
 
+      <NpuTopMonitor />
+
       <Card className="reid-controls">
         <Space wrap size="middle">
           <Select<ReidSplit>
@@ -151,11 +160,6 @@ export default function ReidViz() {
           </Typography.Text>
         </Space>
         <div className="reid-control-row">
-          <Segmented
-            value={stage}
-            onChange={(value) => setStage(value as ReidStage)}
-            options={Object.entries(STAGE_LABELS).map(([value, label]) => ({ value, label }))}
-          />
           <Segmented
             value={displayMode}
             onChange={(value) => setDisplayMode(value as ReidDisplayMode)}
@@ -176,33 +180,41 @@ export default function ReidViz() {
       </Card>
 
       {error && <Alert type="error" showIcon message={error} className="reid-alert" />}
-      <div className="reid-stage-note">
-        <strong>{STAGE_LABELS[stage]}</strong>
-        <span>{t('Heatmaps share one normalization range across all four samples in the batch.')}</span>
-      </div>
 
       <Spin spinning={loading} tip={t('Generating heatmap...')}>
-        <div className="reid-sample-grid" aria-live="polite">
-          {batch?.samples.map((sample, index) => (
-            <Card
-              key={sample.sampleId}
-              className="reid-sample-card"
-              title={`Sample ${index + 1} · PID ${sample.pid}`}
-              extra={<Tag color={sample.modality === 'visible' ? 'green' : 'purple'}>{sample.modality}</Tag>}
-            >
-              <ReidHeatmapCanvas
-                imageUrl={sample.imageUrl}
-                values={sample.heatmaps[stage].values}
-                mode={displayMode}
-                opacity={opacity}
-                label={`PID ${sample.pid} ${STAGE_LABELS[stage]} heatmap`}
-              />
-              <div className="reid-sample-meta">
-                <span>Camera {sample.camera}</span>
-                <span>Predicted PID {sample.prediction.pid}</span>
-                <span>Confidence {(sample.prediction.score * 100).toFixed(1)}%</span>
+        <div className="reid-stage-list" aria-live="polite">
+          {STAGES.map((stage) => (
+            <section className="reid-stage-section" key={stage} aria-labelledby={`reid-stage-${stage}`}>
+              <div className="reid-stage-note">
+                <Typography.Title level={4} id={`reid-stage-${stage}`}>
+                  {STAGE_LABELS[stage]}
+                </Typography.Title>
+                <span>{t('Heatmaps share one normalization range across all four samples in the batch.')}</span>
               </div>
-            </Card>
+              <div className="reid-sample-grid">
+                {batch?.samples.map((sample, index) => (
+                  <Card
+                    key={sample.sampleId}
+                    className="reid-sample-card"
+                    title={`Sample ${index + 1} · PID ${sample.pid}`}
+                    extra={<Tag color={sample.modality === 'visible' ? 'green' : 'purple'}>{sample.modality}</Tag>}
+                  >
+                    <ReidHeatmapCanvas
+                      imageUrl={sample.imageUrl}
+                      values={sample.heatmaps[stage].values}
+                      mode={displayMode}
+                      opacity={opacity}
+                      label={`PID ${sample.pid} ${STAGE_LABELS[stage]} heatmap`}
+                    />
+                    <div className="reid-sample-meta">
+                      <span>Camera {sample.camera}</span>
+                      <span>Predicted PID {sample.prediction.pid}</span>
+                      <span>Confidence {(sample.prediction.score * 100).toFixed(1)}%</span>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       </Spin>

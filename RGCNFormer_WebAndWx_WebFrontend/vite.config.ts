@@ -2,7 +2,7 @@
  * @Author: Chao Deng && chaodeng987@outlook.com
  * @Date: 2026-06-03 14:37:46
  * @LastEditors: Chao Deng && chaodeng987@outlook.com
- * @LastEditTime: 2026-07-15 09:16:19
+ * @LastEditTime: 2026-07-16 09:56:51
  * @FilePath: /re_id_cluster/RGCNFormer_WebAndWx_WebFrontend/vite.config.ts
  * @Description: 
  * 那只是一场游戏一场梦
@@ -61,7 +61,7 @@ export default defineConfig(({ mode }) => {
   // Load env file based on mode
   const env = loadEnv(mode, process.cwd(), '')
 
-  const proxyTarget = env.VITE_PROXY_TARGET || 'http://localhost:8000'
+  const proxyTarget = env.VITE_PROXY_TARGET || 'http://localhost:8005'
 
   return {
     base: '/mrmodn/',

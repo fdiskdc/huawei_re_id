@@ -264,6 +264,13 @@ const WorkspacePage: React.FC = () => {
           </span>
           <button
             className="process-btn"
+            onClick={() => navigate('/nextgen/reid')}
+            title="Pedestrian Re-identification Visualization"
+          >
+            Re-ID Visualization
+          </button>
+          <button
+            className="process-btn"
             onClick={() => navigate('/nextgen/compare')}
             title="Compare model performance"
           >
