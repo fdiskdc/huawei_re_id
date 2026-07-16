@@ -49,6 +49,11 @@ import os
 import logging
 from typing import Dict
 
+from config_file import load_backend_config
+
+
+BACKEND_CONFIG_FILE = load_backend_config()
+
 
 class Config:
     """Application configuration class."""

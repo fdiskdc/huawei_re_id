@@ -79,11 +79,11 @@ pip install -r requirements.txt
 
 #### 3. 配置环境变量 / Configure
 ```bash
-cp .env.example .env
-# 编辑 .env,设置:
+# 直接编辑统一的可见配置文件 backend.env：
 #   REDIS_HOST=localhost
-#   MODEL_PATH=./epoch_040.pt
-#   LINEARFOLD_PATH=./LinearFold/bin/
+#   MODEL_CHECKPOINT_PATH=./epoch_040.pt
+#   WX_APPID=...
+#   WX_SECRET=...
 ```
 
 #### 4. 启动后端 / Start Backend
@@ -284,9 +284,9 @@ mRModN_WebAndWx_backend/
 ```bash
 git clone https://github.com/fdiskdc/mRModN_WebAndWx_backend.git
 cd mRModN_WebAndWx_backend
-cp .env.example .env
-docker-compose up -d
-docker-compose logs -f
+# 编辑 backend.env 后启动
+docker compose --env-file backend.env up -d
+docker compose logs -f
 ```
 
 ### Method 2: Local Flask Dev Server

@@ -63,5 +63,5 @@ echo "   - GUNICORN_WORKERS: $GUNICORN_WORKERS"
 echo "   - CELERY_CONCURRENCY: $CELERY_CONCURRENCY"
 echo "---------------------------------------"
 
-# 使用 docker-compose 启动并强制重新构建
-docker compose up -d --build
+# 使用统一的可见配置文件启动并强制重新构建
+docker compose --env-file backend.env up -d --build
