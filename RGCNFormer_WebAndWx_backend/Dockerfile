@@ -1,9 +1,14 @@
-FROM python:3.11-slim
+ARG PYTHON_IMAGE=docker.m.daocloud.io/library/python:3.11-slim
+ARG UV_IMAGE=docker.m.daocloud.io/ghcr.io/astral-sh/uv:latest
+
+FROM ${UV_IMAGE} AS uv
+FROM ${PYTHON_IMAGE}
 
 WORKDIR /app
 
 ARG DEBIAN_MIRROR=https://mirrors.aliyun.com/debian
 ARG DEBIAN_SECURITY_MIRROR=https://mirrors.aliyun.com/debian-security
+ARG UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple
 
 RUN sed -i \
       -e "s|http://deb.debian.org/debian-security|${DEBIAN_SECURITY_MIRROR}|g" \
@@ -13,10 +18,11 @@ RUN sed -i \
     && apt-get install -y --no-install-recommends curl build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=uv /uv /uvx /bin/
 COPY pyproject.toml uv.lock ./
 
 ENV UV_PROJECT_ENVIRONMENT=/opt/venv
+ENV UV_DEFAULT_INDEX=${UV_DEFAULT_INDEX}
 ENV PATH="/opt/venv/bin:$PATH"
 
 RUN uv sync --locked --no-dev --no-install-project

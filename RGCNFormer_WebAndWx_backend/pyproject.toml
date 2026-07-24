@@ -26,13 +26,17 @@ export = [
     "onnx",
 ]
 
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
 
 [[tool.uv.index]]
-name = "aliyun"
-url = "https://mirrors.aliyun.com/pypi/simple/"
+name = "pytorch-cpu"
+url = "https://mirror.nju.edu.cn/pytorch/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "tsinghua"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 default = true
 
 [tool.pytest.ini_options]

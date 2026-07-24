@@ -1,6 +1,13 @@
 services:
   backend:
-    build: .
+    build:
+      context: .
+      args:
+        PYTHON_IMAGE: ${PYTHON_IMAGE:-docker.m.daocloud.io/library/python:3.11-slim}
+        UV_IMAGE: ${UV_IMAGE:-docker.m.daocloud.io/ghcr.io/astral-sh/uv:latest}
+        DEBIAN_MIRROR: ${DEBIAN_MIRROR:-https://mirrors.aliyun.com/debian}
+        DEBIAN_SECURITY_MIRROR: ${DEBIAN_SECURITY_MIRROR:-https://mirrors.aliyun.com/debian-security}
+        UV_DEFAULT_INDEX: ${UV_DEFAULT_INDEX:-https://pypi.tuna.tsinghua.edu.cn/simple}
     container_name: rgcn_backend
     command: gunicorn -w ${GUNICORN_WORKERS:-1} -b 0.0.0.0:8000 --timeout 120 wsgi:app
     ports:
@@ -25,7 +32,14 @@ services:
       - redis
 
   worker:
-    build: .
+    build:
+      context: .
+      args:
+        PYTHON_IMAGE: ${PYTHON_IMAGE:-docker.m.daocloud.io/library/python:3.11-slim}
+        UV_IMAGE: ${UV_IMAGE:-docker.m.daocloud.io/ghcr.io/astral-sh/uv:latest}
+        DEBIAN_MIRROR: ${DEBIAN_MIRROR:-https://mirrors.aliyun.com/debian}
+        DEBIAN_SECURITY_MIRROR: ${DEBIAN_SECURITY_MIRROR:-https://mirrors.aliyun.com/debian-security}
+        UV_DEFAULT_INDEX: ${UV_DEFAULT_INDEX:-https://pypi.tuna.tsinghua.edu.cn/simple}
     container_name: rgcn_worker
     command: celery -A tasks_docker.celery_app worker --concurrency=${CELERY_CONCURRENCY:-1} --loglevel=info
     volumes:
@@ -42,6 +56,6 @@ services:
       - backend
 
   redis:
-    image: docker.io/library/redis:alpine
+    image: ${REDIS_IMAGE:-docker.m.daocloud.io/library/redis:alpine}
     container_name: rgcn_redis
     restart: always
