@@ -10,7 +10,7 @@
 # ============================================================================
 # Conda Environment Configuration
 # ============================================================================
-CONDA_ENV_NAME="learn"        # Change to your conda environment name
+CONDA_ENV_NAME="base"        # Change to your conda environment name
 CONDA_BASE_PATH="$HOME/miniconda3"  # Conda installation path
 
 # Activate conda environment
@@ -32,7 +32,7 @@ echo "✓ Conda environment activated: $CONDA_ENV_NAME"
 # Service Configuration (Auto-detecting CPU cores)
 # ============================================================================
 HOST=0.0.0.0
-PORT=8000
+PORT=8005
 
 # Automatically determine CPU core count
 if [ -f /proc/cpuinfo ]; then

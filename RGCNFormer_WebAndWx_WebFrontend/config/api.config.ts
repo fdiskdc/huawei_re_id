@@ -70,10 +70,10 @@ export const ENDPOINTS = {
     INTEGRATED_GRADIENTS: `${BASE_URL}/integrated-gradients`,
     VISUALIZE_GCN_AGGREGATION: `${BASE_URL}/visualize-gcn-aggregation`,
     MODEL_COMPARISON: `${BASE_URL}/model-comparison`,
-    MRMODN_CLASSIFICATION_HEATMAP: `${BASE_URL}/mrmodn-classification-heatmap`,
+    MRMODN_CLASSIFICATION_HEATMAP: `${BASE_URL}/rgcnformer-classification-heatmap`,
     DATASET_COMPARISON: `${BASE_URL}/dataset-comparison-heatmap`,
-    MRMODN_LOCALIZATION: `${BASE_URL}/mrmodn-localization`,
-    MRMODN_LOC_COMPARISON: `${BASE_URL}/mrmodn-loc-comparison`,
+    MRMODN_LOCALIZATION: `${BASE_URL}/rgcnformer-localization`,
+    MRMODN_LOC_COMPARISON: `${BASE_URL}/rgcnformer-loc-comparison`,
     UMAP_DATA: `${BASE_URL}/umap-data`,
     UMAP_CORA_DATA: `${BASE_URL}/umap-cora-data`,
     PREDICT: LEGACY_PREDICT_URL,
@@ -87,7 +87,7 @@ export const ENDPOINTS = {
 
 // ==================== Vite Proxy Configuration ====================
 
-export const DEFAULT_PROXY_TARGET = 'http://localhost:8000';
+export const DEFAULT_PROXY_TARGET = 'http://localhost:8005';
 export const PROXY_TARGET = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_PROXY_TARGET) ?? DEFAULT_PROXY_TARGET;
 
 // ==================== TypeScript Interface ====================

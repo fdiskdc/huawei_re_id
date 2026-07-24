@@ -61,9 +61,9 @@ const MODEL_COLORS: Record<string, string> = {
 
 const MODEL_DISPLAY_NAMES: Record<string, string> = {
   mRModN: 'DCPRES',
-  MultiRM: 'ProCSE',
-  modX: 'GCN',
-  EvoRMD: 'DSCPS',
+  MultiRM: 'SCDGC',
+  modX: 'DSCPS',
+  EvoRMD: 'GCN',
 };
 
 const getDisplayName = (modelName: string): string => MODEL_DISPLAY_NAMES[modelName] || modelName;

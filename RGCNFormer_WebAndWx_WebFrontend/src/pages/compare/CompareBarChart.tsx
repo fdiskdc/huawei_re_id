@@ -48,7 +48,7 @@ interface CompareBarChartProps {
 
 const MORANDI_COLORS = [
   '#B8A9C9',  // DCPRES - muted purple
-  '#A3B5A6',  // ProCSE - sage green
+  '#A3B5A6',  // SCDGC - sage green
   '#C4A882',  // GCN - warm sand
   '#D4A0A0',  // K-Means - dusty rose
   '#8BA4B8',  // DSCPS - steel blue

@@ -18,7 +18,7 @@
  *
  * 输入 / Inputs:
  * - useRna().rnaSequence: 当前 RNA 序列 / current RNA sequence
- * - 后端 /api/v1/mrmodn-localization 返回 MrmodnLocalizationData
+ * - 后端 /api/v1/rgcnformer-localization 返回 MrmodnLocalizationData
  *
  * 输出 / Outputs:
  * - JSX.Element 折线 + 饼图 / Line + pie JSX

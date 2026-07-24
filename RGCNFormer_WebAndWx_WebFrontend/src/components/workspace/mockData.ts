@@ -94,8 +94,8 @@ export const DEFAULT_MODELS: ModelBlock[] = [
   {
     id: 'model_procse',
     type: 'model',
-    title: 'ProCSE',
-    modelName: 'ProCSE',
+    title: 'SCDGC',
+    modelName: 'SCDGC',
     status: 'available',
     description:
       'Progressive Contrastive Structural Entropy for Graph Clustering',

@@ -28,7 +28,7 @@
  * 输入 / Inputs:
  * - URL: /compare(query 参数可指定对比模型集合,可选)
  * - 后端 /api/v1/model-comparison, dataset-comparison, mrmodn-heatmap,
- *   mrmodn-localization, mrmodn-loc-comparison, umap, cora-umap
+ *   rgcnformer-localization, rgcnformer-loc-comparison, umap, cora-umap
  *
  * 输出 / Outputs:
  * - JSX.Element 综合对比页 / Comparison page JSX

@@ -1313,7 +1313,7 @@ def visualize_gcn_aggregation():
 # Model Comparison Endpoint
 # ============================================================================
 
-METRIC_COLUMNS = ['Acc', 'AUC', 'AUPRC', 'Precision', 'Recall', 'F1', 'MCC', 'Sn', 'Sp']
+METRIC_COLUMNS = ['Acc', 'AUC', 'AUPRC', 'Precision', 'Recall', 'F1', 'MCC']
 
 MODEL_COMPARISON_XLSX = os.path.join(os.path.dirname(__file__), 'data', 'DCPRES_cls_comp.xlsx')
 
@@ -1337,8 +1337,25 @@ def get_model_comparison():
         wb = openpyxl.load_workbook(MODEL_COMPARISON_XLSX, data_only=True)
         ws = wb['Sheet1']
 
-        # Row 1: headers [None, 'Acc', 'AUC', ...]
-        # Row 2+: [ModelName, value, value, ...]
+        # Read values by header name so that adding/removing or reordering metric
+        # columns in the workbook does not leave stale positional indexes here.
+        header_row = next(ws.iter_rows(min_row=1, max_row=1, values_only=True))
+        column_indexes = {
+            str(header).strip(): index
+            for index, header in enumerate(header_row)
+            if header is not None
+        }
+        missing_metrics = [
+            metric_name
+            for metric_name in METRIC_COLUMNS
+            if metric_name not in column_indexes
+        ]
+        if missing_metrics:
+            raise ValueError(
+                "Model comparison Excel file is missing metric columns: "
+                + ", ".join(missing_metrics)
+            )
+
         models = []
         for row in ws.iter_rows(min_row=2, max_row=ws.max_row, values_only=True):
             model_name = row[0]
@@ -1346,8 +1363,9 @@ def get_model_comparison():
                 continue
             model_name = str(model_name)
             metrics = {}
-            for col_idx, metric_name in enumerate(METRIC_COLUMNS):
-                cell_val = row[col_idx + 1]
+            for metric_name in METRIC_COLUMNS:
+                column_index = column_indexes[metric_name]
+                cell_val = row[column_index] if column_index < len(row) else None
                 if cell_val is not None:
                     try:
                         metrics[metric_name] = float(cell_val)

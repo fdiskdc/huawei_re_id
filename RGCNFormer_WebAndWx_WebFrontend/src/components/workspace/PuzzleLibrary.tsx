@@ -76,7 +76,7 @@ const PuzzleLibrary: React.FC<PuzzleLibraryProps> = ({ onAddSequence, onAddViz }
       ))}
 
       <h3>Visualization Blocks</h3>
-      {VIZ_TYPE_REGISTRY.map((viz) => (
+      {VIZ_TYPE_REGISTRY.filter((viz) => viz.key !== 'model-graph').map((viz) => (
         <div
           key={viz.key}
           className="puzzle-item"
