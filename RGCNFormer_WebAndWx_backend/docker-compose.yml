@@ -4,7 +4,7 @@ services:
       context: .
       args:
         PYTHON_IMAGE: ${PYTHON_IMAGE:-docker.m.daocloud.io/library/python:3.11-slim}
-        UV_IMAGE: ${UV_IMAGE:-docker.m.daocloud.io/ghcr.io/astral-sh/uv:latest}
+        UV_VERSION: ${UV_VERSION:-0.11.28}
         DEBIAN_MIRROR: ${DEBIAN_MIRROR:-https://mirrors.aliyun.com/debian}
         DEBIAN_SECURITY_MIRROR: ${DEBIAN_SECURITY_MIRROR:-https://mirrors.aliyun.com/debian-security}
         UV_DEFAULT_INDEX: ${UV_DEFAULT_INDEX:-https://pypi.tuna.tsinghua.edu.cn/simple}
@@ -36,7 +36,7 @@ services:
       context: .
       args:
         PYTHON_IMAGE: ${PYTHON_IMAGE:-docker.m.daocloud.io/library/python:3.11-slim}
-        UV_IMAGE: ${UV_IMAGE:-docker.m.daocloud.io/ghcr.io/astral-sh/uv:latest}
+        UV_VERSION: ${UV_VERSION:-0.11.28}
         DEBIAN_MIRROR: ${DEBIAN_MIRROR:-https://mirrors.aliyun.com/debian}
         DEBIAN_SECURITY_MIRROR: ${DEBIAN_SECURITY_MIRROR:-https://mirrors.aliyun.com/debian-security}
         UV_DEFAULT_INDEX: ${UV_DEFAULT_INDEX:-https://pypi.tuna.tsinghua.edu.cn/simple}
