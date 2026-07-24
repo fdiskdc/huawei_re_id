@@ -154,9 +154,9 @@ class Config:
             os.path.join(os.path.dirname(__file__), 'data')
         )
         self.MODEL_COMPARISON_FILES = {
-            'ModX': 'modx_res.csv',
-            'MultiRM': 'multirm_res.csv',
-            'DCPRES': 'res.csv',
+            'DCPRES': 'DCPRES_cls.csv',
+            'SCDGC': 'SCDGC_cls.csv',
+            'DSCPS': 'DSCPS_cls.csv',
         }
 
         # Dataset Comparison Excel File

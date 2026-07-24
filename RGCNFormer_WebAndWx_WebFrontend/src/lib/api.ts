@@ -511,6 +511,7 @@ export interface AttentionComparisonData {
   samples: AttentionComparisonSample[];
   class_names: string[];
   model_names: string[];
+  available_sequence_ids?: number[];
 }
 
 export interface AttentionClassData {
@@ -532,8 +533,11 @@ export interface AttentionVisualizationData {
 /**
  * Fetch pre-computed attention comparison data for 4 models
  */
-export async function fetchAttentionComparison(): Promise<AttentionComparisonData> {
-  const response = await fetch(ENDPOINTS.ATTENTION_COMPARISON);
+export async function fetchAttentionComparison(sequenceId?: number): Promise<AttentionComparisonData> {
+  const url = sequenceId === undefined
+    ? ENDPOINTS.ATTENTION_COMPARISON
+    : `${ENDPOINTS.ATTENTION_COMPARISON}?sequence_id=${encodeURIComponent(sequenceId)}`;
+  const response = await fetch(url);
 
   if (!response.ok) {
     throw await createApiError(response);

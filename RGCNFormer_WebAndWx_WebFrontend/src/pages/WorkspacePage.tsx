@@ -160,7 +160,7 @@ const WorkspacePage: React.FC = () => {
       if (!seqBlock || !seqBlock.sequence) return;
 
       // Check if the bound model is not yet implemented
-      const IMPLEMENTED_MODELS = ['model_mrmodn'];
+      const IMPLEMENTED_MODELS = ['model_dcpres'];
       if (vizBlock.boundModelId && !IMPLEMENTED_MODELS.includes(vizBlock.boundModelId)) {
         message.warning('Model Coming Soon — This model is not yet available.');
         return;
@@ -316,7 +316,7 @@ const WorkspacePage: React.FC = () => {
         onCancel={handleCloseVizModal}
         footer={null}
         width={900}
-        destroyOnClose
+        destroyOnHidden
         styles={{ body: { padding: 16, height: '85vh', overflow: 'auto' } }}
       >
         {vizModalBlock && <VizRenderer vizBlock={vizModalBlock} />}

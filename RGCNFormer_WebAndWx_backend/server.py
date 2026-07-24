@@ -1410,12 +1410,12 @@ def get_model_comparison():
 def get_rgcnformer_classification_heatmap():
     """
     Get DCPRES per-class classification performance data for heatmap visualization.
-    Returns the full 12-class x 9-metric data from res.csv.
+    Returns the full 12-class classification metrics from DCPRES_cls.csv.
     """
     try:
         csv_path = os.path.join(
             config.MODEL_COMPARISON_CSV_DIR,
-            config.MODEL_COMPARISON_FILES.get('RGCNFormer', 'res.csv')
+            config.MODEL_COMPARISON_FILES.get('DCPRES', 'DCPRES_cls.csv')
         )
 
         if not os.path.exists(csv_path):
@@ -1552,9 +1552,9 @@ def get_dataset_comparison_heatmap():
 # ============================================================================
 
 LOC_COMPARISON_FILES = {
-    'RGCNFormer': 'rgcnformer_loc.csv',
-    'ModX': 'modx_loc.csv',
-    'MultiRM': 'multirm_loc.csv',
+    'DCPRES': 'DCPRES_loc.csv',
+    'SCDGC': 'SCDGC_loc.csv',
+    'DSCPS': 'DSCPS_loc.csv',
 }
 
 K_VALUE_COLUMNS = ['Top-1', 'Top-3', 'Top-5', 'Top-7', 'Top-10', 'Top-20', 'Top-50']
@@ -1568,7 +1568,7 @@ def get_rgcnformer_localization():
     Returns donut chart data (12 classes x 7 Top-K values) and per-class statistics.
     """
     try:
-        loc_csv_path = os.path.join(config.MODEL_COMPARISON_CSV_DIR, 'rgcnformer_loc.csv')
+        loc_csv_path = os.path.join(config.MODEL_COMPARISON_CSV_DIR, 'DCPRES_loc.csv')
         stat_csv_path = os.path.join(config.MODEL_COMPARISON_CSV_DIR, 'statistic_loc.csv')
 
         if not os.path.exists(loc_csv_path):
@@ -1834,10 +1834,10 @@ def get_umap_cora_data():
 # ============================================================================
 
 ATTENTION_NPZ_FILES = {
-    'mRModN': os.path.join(os.path.dirname(__file__), 'data', 'mrmodn_full_atten.npz'),
-    'MultiRM': os.path.join(os.path.dirname(__file__), 'data', 'multirm_segmented_atten.npz'),
-    'modX': os.path.join(os.path.dirname(__file__), 'data', 'modx_full_atten.npz'),
-    'EvoRMD': os.path.join(os.path.dirname(__file__), 'data', 'evormd_segmented_atten.npz'),
+    'DCPRES': os.path.join(os.path.dirname(__file__), 'data', 'DCPRES_atten.npz'),
+    'SCDGC': os.path.join(os.path.dirname(__file__), 'data', 'SCDGC_atten.npz'),
+    'DSCPS': os.path.join(os.path.dirname(__file__), 'data', 'DSCPS_atten.npz'),
+    'GCN': os.path.join(os.path.dirname(__file__), 'data', 'GCN_atten.npz'),
 }
 
 CLASS_NAMES = ['Am', 'Atol', 'Cm', 'Gm', 'Tm', 'Y', 'ac4C', 'm1A', 'm5C', 'm6A', 'm6Am', 'm7G']
@@ -1847,7 +1847,8 @@ CLASS_NAMES = ['Am', 'Atol', 'Cm', 'Gm', 'Tm', 'Y', 'ac4C', 'm1A', 'm5C', 'm6A',
 def get_attention_comparison():
     """
     Get pre-computed attention comparison data for 4 models.
-    Randomly selects 5 samples and returns attention weights for classes with label=1.
+    Randomly selects 5 samples, or selects one sample by the sequence_id query
+    parameter, and returns attention weights for classes with label=1.
     """
     try:
         import numpy as np
@@ -1872,17 +1873,40 @@ def get_attention_comparison():
             }
 
         # Use first model to determine sample indices (same across all models)
-        num_samples = models_data['mRModN']['attn_weights'].shape[0]
+        num_samples = models_data['DCPRES']['attn_weights'].shape[0]
 
-        # Randomly select 5 samples
-        np.random.seed(None)  # True random each time
-        selected_indices = np.random.choice(num_samples, size=min(5, num_samples), replace=False)
+        sequence_id = request.args.get('sequence_id', type=str)
+        if sequence_id is not None:
+            try:
+                requested_sequence_id = int(sequence_id)
+            except ValueError:
+                return jsonify({
+                    "error": "Invalid sequence ID",
+                    "detail": "sequence_id must be an integer"
+                }), 400
+
+            sequence_ids = models_data['DCPRES']['indices']
+            matches = np.where(sequence_ids == requested_sequence_id)[0]
+            if matches.size == 0:
+                return jsonify({
+                    "error": "Sequence ID not found",
+                    "detail": f"Sequence ID {requested_sequence_id} is not available"
+                }), 404
+            selected_indices = [int(matches[0])]
+        else:
+            # Randomly select 5 samples
+            np.random.seed(None)  # True random each time
+            selected_indices = np.random.choice(
+                num_samples,
+                size=min(5, num_samples),
+                replace=False
+            )
 
         samples = []
         for idx in selected_indices:
             idx = int(idx)
             sample_data = {
-                'index': idx,
+                'index': int(models_data['DCPRES']['indices'][idx]),
                 'models': {}
             }
 
@@ -1913,6 +1937,10 @@ def get_attention_comparison():
             'samples': samples,
             'class_names': CLASS_NAMES,
             'model_names': list(ATTENTION_NPZ_FILES.keys()),
+            'available_sequence_ids': [
+                int(sequence_id)
+                for sequence_id in models_data['DCPRES']['indices']
+            ],
         }
 
         logger.info(f"Attention comparison data returned: {len(samples)} samples, {len(ATTENTION_NPZ_FILES)} models")

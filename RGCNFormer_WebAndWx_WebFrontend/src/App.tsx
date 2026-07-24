@@ -78,7 +78,7 @@ const App: React.FC = () => {
   return (
     <LanguageProvider>
       <QueryClientProvider client={queryClient}>
-        <Suspense fallback={<div style={{ padding: 32 }}>Loading mRModN…</div>}><Routes>
+        <Suspense fallback={<div style={{ padding: 32 }}>Loading DCPRES…</div>}><Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/classic" element={<MainPage />} />
           <Route element={<VizLayout />}>

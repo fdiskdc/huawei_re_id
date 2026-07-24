@@ -8,7 +8,7 @@
  *
  * 功能模块 / Modules:
  * - generateId(prefix): 基于时间戳 + 计数器的 ID / timestamp + counter ID
- * - DEFAULT_MODELS: 默认模型块(mRModN / GCN / Baseline)/ default model blocks
+ * - DEFAULT_MODELS: 六个规范模型块 / six canonical model blocks
  * - DEFAULT_SEQUENCE: 示例 RNA 序列 / sample RNA sequence
  * - SAMPLE_VISUALIZATION_DATA: 示例注意力 / 定位数据 / sample attention/loc data
  *
@@ -52,7 +52,7 @@ export const generateId = (prefix: string): string => {
 
 export const DEFAULT_MODELS: ModelBlock[] = [
   {
-    id: 'model_mrmodn',
+    id: 'model_dcpres',
     type: 'model',
     title: 'DCPRES',
     modelName: 'DCPRES',
@@ -92,7 +92,7 @@ export const DEFAULT_MODELS: ModelBlock[] = [
     version: 'v1.0',
   },
   {
-    id: 'model_procse',
+    id: 'model_scdgc',
     type: 'model',
     title: 'SCDGC',
     modelName: 'SCDGC',
@@ -100,6 +100,16 @@ export const DEFAULT_MODELS: ModelBlock[] = [
     description:
       'Progressive Contrastive Structural Entropy for Graph Clustering',
     version: 'v1.0',
+  },
+  {
+    id: 'model_mlp',
+    type: 'model',
+    title: 'MLP',
+    modelName: 'MLP',
+    status: 'available',
+    description:
+      'Multi-layer perceptron baseline for RNA modification prediction.',
+    version: 'v0.1',
   },
 ];
 

@@ -1,11 +1,11 @@
 /**
  * AttentionComparisonViz.tsx - 多模型注意力对比 / Multi-model attention comparison
  *
- * /viz-display 之一(也可独立访问)。使用 ECharts 并排展示 mRModN / MultiRM /
- * modX / EvoRMD 等多个模型在同一样本上的注意力分布(柱状图或热力图)。
+ * /viz-display 之一(也可独立访问)。使用 ECharts 并排展示 DCPRES / SCDGC /
+ * DSCPS / GCN 在同一样本上的注意力概率密度。
  * 数据由 fetchAttentionComparison 拉取,经 useQuery 缓存。
  * One of the /viz-display pages. Uses ECharts to side-by-side display attention
- * distributions of multiple models (mRModN / MultiRM / modX / EvoRMD) on the
+ * distributions of multiple models (DCPRES / SCDGC / DSCPS / GCN) on the
  * same sample. Data via fetchAttentionComparison + useQuery.
  *
  * 功能模块 / Modules:
@@ -43,30 +43,53 @@ import * as echarts from 'echarts';
 import { fetchAttentionComparison } from '../lib/api';
 
 const MORANDI = {
-  mRModN: '#8DA9C4',
-  MultiRM: '#B5838D',
-  modX: '#A3B18A',
-  EvoRMD: '#DDB892',
+  DCPRES: '#8DA9C4',
+  SCDGC: '#B5838D',
+  DSCPS: '#A3B18A',
+  GCN: '#DDB892',
   true_site: '#6B705C',
   bg: '#FAFAF8',
   textDark: '#4A4A4A',
 };
 
 const MODEL_COLORS: Record<string, string> = {
-  mRModN: MORANDI.mRModN,
-  MultiRM: MORANDI.MultiRM,
-  modX: MORANDI.modX,
-  EvoRMD: MORANDI.EvoRMD,
+  DCPRES: MORANDI.DCPRES,
+  SCDGC: MORANDI.SCDGC,
+  DSCPS: MORANDI.DSCPS,
+  GCN: MORANDI.GCN,
 };
 
-const MODEL_DISPLAY_NAMES: Record<string, string> = {
-  mRModN: 'DCPRES',
-  MultiRM: 'SCDGC',
-  modX: 'DSCPS',
-  EvoRMD: 'GCN',
-};
+const GAUSSIAN_BANDWIDTH = 12;
 
-const getDisplayName = (modelName: string): string => MODEL_DISPLAY_NAMES[modelName] || modelName;
+/**
+ * Apply a Gaussian kernel to discrete attention weights and normalize the
+ * result so its integral (with a unit position interval) is one.
+ */
+const gaussianProbabilityDensity = (values: number[], bandwidth: number): number[] => {
+  if (values.length === 0) return [];
+
+  const radius = Math.ceil(bandwidth * 4);
+  const kernel = Array.from({ length: radius * 2 + 1 }, (_, index) => {
+    const distance = index - radius;
+    return Math.exp(-(distance * distance) / (2 * bandwidth * bandwidth));
+  });
+
+  const density = values.map((_, position) => {
+    let weightedSum = 0;
+    const start = Math.max(0, position - radius);
+    const end = Math.min(values.length - 1, position + radius);
+
+    for (let sourcePosition = start; sourcePosition <= end; sourcePosition += 1) {
+      const kernelWeight = kernel[sourcePosition - position + radius];
+      weightedSum += Math.max(0, values[sourcePosition] || 0) * kernelWeight;
+    }
+
+    return weightedSum;
+  });
+
+  const total = density.reduce((sum, value) => sum + value, 0);
+  return total > 0 ? density.map((value) => value / total) : density;
+};
 
 interface AttentionChartProps {
   attention: number[];
@@ -89,16 +112,17 @@ const AttentionChart: React.FC<AttentionChartProps> = ({
     const chart = echarts.init(chartRef.current);
     const x = Array.from({ length: seqLength }, (_, i) => i);
     const color = MODEL_COLORS[modelName] || '#888';
+    const density = gaussianProbabilityDensity(attention, GAUSSIAN_BANDWIDTH);
 
     const option: echarts.EChartsOption = {
       backgroundColor: MORANDI.bg,
       tooltip: {
         trigger: 'axis',
         formatter: (params: any) => {
-          const pos = params[0].dataIndex;
-          const val = params[0].value;
+          const pos = params[0].value[0];
+          const val = params[0].value[1];
           const isSite = trueSites.includes(pos);
-          return `Position: ${pos}<br/>Attention: ${val.toFixed(6)}${isSite ? '<br/><b>True Site</b>' : ''}`;
+          return `Position: ${pos}<br/>Probability density: ${val.toFixed(6)}${isSite ? '<br/><b>True Site</b>' : ''}`;
         },
       },
       grid: {
@@ -108,17 +132,20 @@ const AttentionChart: React.FC<AttentionChartProps> = ({
         bottom: 30,
       },
       xAxis: {
-        type: 'category',
-        data: x,
+        type: 'value',
+        name: 'Position',
+        min: 0,
+        max: Math.max(0, seqLength - 1),
         axisLabel: {
           color: MORANDI.textDark,
           fontSize: 10,
-          interval: 199,
         },
         axisLine: { lineStyle: { color: '#ccc' } },
       },
       yAxis: {
         type: 'value',
+        name: 'Density',
+        min: 0,
         axisLabel: {
           color: MORANDI.textDark,
           fontSize: 10,
@@ -129,33 +156,24 @@ const AttentionChart: React.FC<AttentionChartProps> = ({
       series: [
         {
           type: 'line',
-          data: attention,
-          smooth: true,
+          name: 'Probability density',
+          data: x.map((position) => [position, density[position]]),
           symbol: 'none',
-          lineStyle: { color, width: 1.5 },
-          areaStyle: { color, opacity: 0.15 },
+          lineStyle: { color, width: 2 },
+          areaStyle: { color, opacity: 0.25 },
+          markLine: {
+            silent: true,
+            symbol: ['none', 'none'],
+            label: { show: false },
+            lineStyle: {
+              color: MORANDI.true_site,
+              width: 1.5,
+              type: 'dashed',
+            },
+            data: trueSites.map((position) => ({ xAxis: position })),
+          },
         },
       ],
-      graphic: trueSites.length > 0 ? [
-        {
-          type: 'group',
-          children: trueSites.map((pos) => ({
-            type: 'line',
-            shape: {
-              x1: 0,
-              y1: 0,
-              x2: 0,
-              y2: -20,
-            },
-            position: [pos * (chartRef.current!.clientWidth - 80) / (seqLength - 1) + 60, 30],
-            style: {
-              stroke: MORANDI.true_site,
-              lineWidth: 1.5,
-              lineDash: [4, 4],
-            },
-          })),
-        },
-      ] : undefined,
     };
 
     chart.setOption(option);
@@ -183,10 +201,10 @@ const AttentionChart: React.FC<AttentionChartProps> = ({
           color: MODEL_COLORS[modelName],
           fontSize: 13,
         }}>
-          {getDisplayName(modelName)}
+          {modelName}
         </span>
         <span style={{ fontSize: 11, color: '#888' }}>
-          True sites: {trueSites.length}
+          Gaussian KDE (σ={GAUSSIAN_BANDWIDTH}) · True sites: {trueSites.length}
         </span>
       </div>
       <div ref={chartRef} style={{ width: '100%', height: 150 }} />
@@ -196,11 +214,95 @@ const AttentionChart: React.FC<AttentionChartProps> = ({
 
 const AttentionComparisonViz: React.FC = () => {
   const [selectedSample, setSelectedSample] = useState(0);
+  const [sequenceIdInput, setSequenceIdInput] = useState('');
+  const [requestedSequenceId, setRequestedSequenceId] = useState<number | undefined>();
+  const [sequenceIdError, setSequenceIdError] = useState('');
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['attentionComparison'],
-    queryFn: fetchAttentionComparison,
+  const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
+    queryKey: ['attentionComparison', requestedSequenceId],
+    queryFn: () => fetchAttentionComparison(requestedSequenceId),
   });
+
+  const loadNextBatch = async () => {
+    setSequenceIdInput('');
+    setSequenceIdError('');
+    if (requestedSequenceId !== undefined) {
+      setRequestedSequenceId(undefined);
+      setSelectedSample(0);
+      return;
+    }
+    const result = await refetch();
+    if (result.data?.samples.length) {
+      setSelectedSample(0);
+    }
+  };
+
+  const loadSequenceById = () => {
+    const value = sequenceIdInput.trim();
+    if (!/^\d+$/.test(value)) {
+      setSequenceIdError('请输入有效的数字序列 ID');
+      return;
+    }
+
+    const sequenceId = Number(value);
+    const availableSequenceIds = data?.available_sequence_ids;
+    if (availableSequenceIds && !availableSequenceIds.includes(sequenceId)) {
+      setSequenceIdError(`序列 ID ${sequenceId} 不在当前 NPZ 的 200 条预计算序列中`);
+      return;
+    }
+
+    setSequenceIdError('');
+    setRequestedSequenceId(sequenceId);
+    setSelectedSample(0);
+  };
+
+  const sequenceSearch = (
+    <div style={{
+      display: 'flex',
+      gap: 8,
+      marginBottom: 16,
+      alignItems: 'center',
+    }}>
+      <input
+        type="text"
+        inputMode="numeric"
+        list="attention-sequence-ids"
+        value={sequenceIdInput}
+        onChange={(event) => {
+          setSequenceIdInput(event.target.value);
+          setSequenceIdError('');
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') loadSequenceById();
+        }}
+        placeholder="输入序列 ID，按回车查询"
+        aria-label="序列 ID"
+        style={{
+          width: 240,
+          padding: '8px 12px',
+          border: '1px solid #B8A9C9',
+          borderRadius: 8,
+          outline: 'none',
+          color: MORANDI.textDark,
+        }}
+      />
+      <datalist id="attention-sequence-ids">
+        {data?.available_sequence_ids?.map((sequenceId) => (
+          <option key={sequenceId} value={sequenceId} />
+        ))}
+      </datalist>
+      {requestedSequenceId !== undefined && !isError && (
+        <span style={{ fontSize: 12, color: '#666' }}>
+          当前序列 ID：{requestedSequenceId}
+        </span>
+      )}
+      {sequenceIdError && (
+        <span style={{ fontSize: 12, color: '#d32f2f' }}>
+          {sequenceIdError}
+        </span>
+      )}
+    </div>
+  );
 
   if (isLoading) {
     return (
@@ -212,8 +314,11 @@ const AttentionComparisonViz: React.FC = () => {
 
   if (isError) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400, color: '#d32f2f' }}>
-        Failed to load attention data: {error?.message}
+      <div>
+        {sequenceSearch}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 320, color: '#d32f2f' }}>
+          Failed to load attention data: {error?.message}
+        </div>
       </div>
     );
   }
@@ -238,12 +343,14 @@ const AttentionComparisonViz: React.FC = () => {
 
   return (
     <div>
+      {sequenceSearch}
       {/* Sample selector */}
       <div style={{
         display: 'flex',
         gap: 8,
         marginBottom: 16,
         flexWrap: 'wrap',
+        alignItems: 'center',
       }}>
         {data.samples.map((s, i) => (
           <button
@@ -262,6 +369,23 @@ const AttentionComparisonViz: React.FC = () => {
             Sample #{i + 1} (idx: {s.index})
           </button>
         ))}
+        <button
+          type="button"
+          onClick={loadNextBatch}
+          disabled={isFetching}
+          style={{
+            padding: '8px 18px',
+            borderRadius: 8,
+            border: '1px solid #8DA9C4',
+            backgroundColor: isFetching ? '#E8E8E8' : '#8DA9C4',
+            color: isFetching ? '#888' : '#fff',
+            cursor: isFetching ? 'not-allowed' : 'pointer',
+            fontWeight: 'bold',
+            marginLeft: 4,
+          }}
+        >
+          {isFetching ? '正在加载…' : '下一批'}
+        </button>
       </div>
 
       {/* Sample info */}
