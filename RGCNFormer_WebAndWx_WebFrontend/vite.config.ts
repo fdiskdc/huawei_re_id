@@ -64,7 +64,8 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = env.VITE_PROXY_TARGET || 'http://localhost:8005'
 
   return {
-    base: '/mrmodn/',
+    // 生产环境直接部署到 1Panel 网站根目录。
+    base: '/',
     plugins: [react()],
     server: {
       host: '0.0.0.0',  // 👈 添加这一行，监听所有网络接口
