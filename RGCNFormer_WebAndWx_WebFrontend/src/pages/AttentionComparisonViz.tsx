@@ -2,10 +2,10 @@
  * AttentionComparisonViz.tsx - 多模型注意力对比 / Multi-model attention comparison
  *
  * /viz-display 之一(也可独立访问)。使用 ECharts 并排展示 DCPRES / SCDGC /
- * DSCPS / GCN 在同一样本上的注意力概率密度。
+ * DSCPS 在同一样本上的注意力概率密度。
  * 数据由 fetchAttentionComparison 拉取,经 useQuery 缓存。
  * One of the /viz-display pages. Uses ECharts to side-by-side display attention
- * distributions of multiple models (DCPRES / SCDGC / DSCPS / GCN) on the
+ * distributions of the visible models (DCPRES / SCDGC / DSCPS) on the
  * same sample. Data via fetchAttentionComparison + useQuery.
  *
  * 功能模块 / Modules:
@@ -41,12 +41,12 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import * as echarts from 'echarts';
 import { fetchAttentionComparison } from '../lib/api';
+import { isHiddenModelName } from '../lib/modelVisibility';
 
 const MORANDI = {
   DCPRES: '#8DA9C4',
   SCDGC: '#B5838D',
   DSCPS: '#A3B18A',
-  GCN: '#DDB892',
   true_site: '#6B705C',
   bg: '#FAFAF8',
   textDark: '#4A4A4A',
@@ -56,7 +56,6 @@ const MODEL_COLORS: Record<string, string> = {
   DCPRES: MORANDI.DCPRES,
   SCDGC: MORANDI.SCDGC,
   DSCPS: MORANDI.DSCPS,
-  GCN: MORANDI.GCN,
 };
 
 const GAUSSIAN_BANDWIDTH = 12;
@@ -332,11 +331,13 @@ const AttentionComparisonViz: React.FC = () => {
   }
 
   const sample = data.samples[selectedSample];
-  const modelNames = data.model_names;
+  const modelNames = data.model_names.filter((modelName) => !isHiddenModelName(modelName));
 
   // Get all active classes across all models for this sample
   const allActiveClasses = new Set<number>();
-  Object.values(sample.models).forEach((m) => {
+  modelNames.forEach((modelName) => {
+    const m = sample.models[modelName];
+    if (!m) return;
     m.class_indices.forEach((ci) => allActiveClasses.add(ci));
   });
   const activeClassIndices = Array.from(allActiveClasses).sort((a, b) => a - b);

@@ -61,6 +61,7 @@ import LocalizationViz from './LocalizationViz';
 import LocComparisonViz from './LocComparisonViz';
 import UMapViz from './UMapViz';
 import AttentionComparisonViz from './AttentionComparisonViz';
+import { isHiddenModelName } from '../lib/modelVisibility';
 
 const { Content, Sider } = Layout;
 
@@ -96,6 +97,15 @@ const ComparePage: React.FC = () => {
     queryKey: ['modelComparison'],
     queryFn: fetchModelComparison,
   });
+
+  // Keep the UI safe when an older backend or cached response still contains
+  // models that are intentionally hidden from comparison views.
+  const visibleModelComparisonData = modelComparisonData
+    ? {
+        ...modelComparisonData,
+        models: modelComparisonData.models.filter((model) => !isHiddenModelName(model.name)),
+      }
+    : undefined;
 
   const { data: heatmapData } = useQuery({
     queryKey: ['mrmodnHeatmap'],
@@ -171,7 +181,7 @@ const ComparePage: React.FC = () => {
       );
     }
 
-    if (!modelComparisonData || modelComparisonData.models.length === 0) {
+    if (!visibleModelComparisonData || visibleModelComparisonData.models.length === 0) {
       return (
         <div style={{
           display: 'flex',
@@ -188,7 +198,7 @@ const ComparePage: React.FC = () => {
 
     switch (selectedVizType) {
       case 'bar':
-        return <CompareBarChart data={modelComparisonData} />;
+        return <CompareBarChart data={visibleModelComparisonData} />;
       case 'heatmap':
         return <MrmodnHeatmap data={heatmapData} />;
       case 'localization':
@@ -209,7 +219,7 @@ const ComparePage: React.FC = () => {
   };
 
   const renderSummaryTable = () => {
-    if (!modelComparisonData || modelComparisonData.models.length === 0 || isLoading || isError) return null;
+    if (!visibleModelComparisonData || visibleModelComparisonData.models.length === 0 || isLoading || isError) return null;
 
     return (
       <table style={{
@@ -219,7 +229,7 @@ const ComparePage: React.FC = () => {
       }}>
         <thead>
           <tr>
-            {['Model Name', ...modelComparisonData.metric_names].map((col) => (
+            {['Model Name', ...visibleModelComparisonData.metric_names].map((col) => (
               <th
                 key={col}
                 style={{
@@ -237,7 +247,7 @@ const ComparePage: React.FC = () => {
           </tr>
         </thead>
         <tbody>
-          {modelComparisonData.models.map((model, rowIdx) => (
+          {visibleModelComparisonData.models.map((model, rowIdx) => (
             <tr
               key={model.name}
               style={{
@@ -255,7 +265,7 @@ const ComparePage: React.FC = () => {
               }}>
                 {model.display_name}
               </td>
-              {modelComparisonData.metric_names.map((metricName) => (
+              {visibleModelComparisonData.metric_names.map((metricName) => (
                 <td
                   key={metricName}
                   style={{

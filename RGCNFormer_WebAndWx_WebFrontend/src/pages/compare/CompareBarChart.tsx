@@ -38,6 +38,7 @@
 import React, { useRef, useEffect } from 'react';
 import * as echarts from 'echarts';
 import type { ECharts } from 'echarts';
+import { isHiddenModelName } from '../../lib/modelVisibility';
 
 interface CompareBarChartProps {
   data: {
@@ -49,8 +50,6 @@ interface CompareBarChartProps {
 const MORANDI_COLORS = [
   '#B8A9C9',  // DCPRES - muted purple
   '#A3B5A6',  // SCDGC - sage green
-  '#C4A882',  // GCN - warm sand
-  '#D4A0A0',  // K-Means - dusty rose
   '#8BA4B8',  // DSCPS - steel blue
 ];
 
@@ -63,6 +62,7 @@ const CompareBarChart: React.FC<CompareBarChartProps> = ({ data }) => {
 
     const chart = echarts.init(chartRef.current);
     chartInstanceRef.current = chart;
+    const visibleModels = data.models.filter((model) => !isHiddenModelName(model.name));
 
     const isMobile = window.innerWidth < 768;
     const labelFontSize = isMobile ? 8 : 10;
@@ -128,7 +128,7 @@ const CompareBarChart: React.FC<CompareBarChartProps> = ({ data }) => {
           },
         },
       },
-      series: data.models.map((model, modelIndex) => {
+      series: visibleModels.map((model, modelIndex) => {
         const color = MORANDI_COLORS[modelIndex % MORANDI_COLORS.length];
         return {
           name: model.display_name,

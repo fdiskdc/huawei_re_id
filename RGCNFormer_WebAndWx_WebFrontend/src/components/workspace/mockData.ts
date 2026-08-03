@@ -8,7 +8,7 @@
  *
  * 功能模块 / Modules:
  * - generateId(prefix): 基于时间戳 + 计数器的 ID / timestamp + counter ID
- * - DEFAULT_MODELS: 六个规范模型块 / six canonical model blocks
+ * - DEFAULT_MODELS: 三个可见模型块 / three visible model blocks
  * - DEFAULT_SEQUENCE: 示例 RNA 序列 / sample RNA sequence
  * - SAMPLE_VISUALIZATION_DATA: 示例注意力 / 定位数据 / sample attention/loc data
  *
@@ -62,26 +62,6 @@ export const DEFAULT_MODELS: ModelBlock[] = [
     version: 'v1.0',
   },
   {
-    id: 'model_gcn',
-    type: 'model',
-    title: 'GCN',
-    modelName: 'GCN',
-    status: 'available',
-    description:
-      'Graph Convolutional Network for RNA modification site prediction. Leverages local graph structure of RNA sequences.',
-    version: 'v0.1',
-  },
-  {
-    id: 'model_kmeans',
-    type: 'model',
-    title: 'K-Means',
-    modelName: 'K-Means',
-    status: 'available',
-    description:
-      'K-Means clustering for unsupervised RNA modification pattern discovery and grouping.',
-    version: 'v0.1',
-  },
-  {
     id: 'model_dscps',
     type: 'model',
     title: 'DSCPS',
@@ -100,16 +80,6 @@ export const DEFAULT_MODELS: ModelBlock[] = [
     description:
       'Progressive Contrastive Structural Entropy for Graph Clustering',
     version: 'v1.0',
-  },
-  {
-    id: 'model_mlp',
-    type: 'model',
-    title: 'MLP',
-    modelName: 'MLP',
-    status: 'available',
-    description:
-      'Multi-layer perceptron baseline for RNA modification prediction.',
-    version: 'v0.1',
   },
 ];
 

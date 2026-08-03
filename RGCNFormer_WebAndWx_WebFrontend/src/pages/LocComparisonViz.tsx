@@ -38,6 +38,7 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 import * as echarts from 'echarts';
 import type { LocComparisonData } from '../lib/api';
+import { isHiddenModelName } from '../lib/modelVisibility';
 
 interface LocComparisonVizProps {
   data?: LocComparisonData;
@@ -68,15 +69,20 @@ const LocComparisonViz: React.FC<LocComparisonVizProps> = ({ data }) => {
     if (!data || !data.model_names || data.model_names.length === 0) return null;
 
     const { model_names, k_labels, heatmap } = data;
-    const numModels = model_names.length;
+    const visibleEntries = model_names
+      .map((modelName, index) => ({ modelName, values: heatmap[index] ?? [] }))
+      .filter(({ modelName }) => !isHiddenModelName(modelName));
+    const modelNames = visibleEntries.map(({ modelName }) => modelName);
+    const visibleHeatmap = visibleEntries.map(({ values }) => values);
+    const numModels = modelNames.length;
     const numK = k_labels.length;
 
     // Compute ranks within each Top-K column
     const ranks: number[][] = [];
     for (let k = 0; k < numK; k++) {
-      const values = model_names.map((_, i) => ({
+      const values = modelNames.map((_, i) => ({
         idx: i,
-        value: heatmap[i]?.[k] ?? 0,
+        value: visibleHeatmap[i]?.[k] ?? 0,
       }));
       values.sort((a, b) => b.value - a.value); // descending
       const colRanks = new Array<number>(numModels);
@@ -87,9 +93,9 @@ const LocComparisonViz: React.FC<LocComparisonVizProps> = ({ data }) => {
     }
 
     return {
-      modelNames: model_names,
+      modelNames,
       kLabels: k_labels,
-      heatmap,
+      heatmap: visibleHeatmap,
       ranks,
       numModels,
       numK,

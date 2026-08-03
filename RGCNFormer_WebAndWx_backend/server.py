@@ -67,6 +67,17 @@ from mrmodn_backend.api.reid import reid_bp
 # Initialize logger
 logger = get_logger('server')
 
+# Models retained in source comparison files but hidden from public APIs/UI.
+HIDDEN_MODEL_NAMES = frozenset({'GCN', 'KMEANS', 'MLP'})
+
+
+def is_hidden_model_name(model_name) -> bool:
+    """Return whether a model name belongs to the hidden comparison models."""
+    normalized_name = ''.join(
+        character for character in str(model_name).upper() if character.isalnum()
+    )
+    return normalized_name in HIDDEN_MODEL_NAMES
+
 # ============================================================================
 # Redis Connection (Shared Storage for Multi-Worker Setup)
 # ============================================================================
@@ -1362,6 +1373,8 @@ def get_model_comparison():
             if model_name is None:
                 continue
             model_name = str(model_name)
+            if is_hidden_model_name(model_name):
+                continue
             metrics = {}
             for metric_name in METRIC_COLUMNS:
                 column_index = column_indexes[metric_name]
@@ -1489,7 +1502,12 @@ def get_dataset_comparison_heatmap():
         wb = openpyxl.load_workbook(xlsx_path, data_only=True)
         ws = wb['Sheet1']
 
-        model_names = [cell.value for cell in ws[1][2:]]  # DAEGC, DyFSS, ..., DCPRES
+        model_columns = [
+            (column_index, str(cell.value).strip())
+            for column_index, cell in enumerate(ws[1][2:])
+            if cell.value is not None and not is_hidden_model_name(cell.value)
+        ]
+        model_names = [model_name for _, model_name in model_columns]
         dataset_names = []
         metric_names = ['NMI', 'ACC', 'ARI', 'F1']
 
@@ -1511,7 +1529,7 @@ def get_dataset_comparison_heatmap():
             row_label = f"{current_dataset}-{metric_val}"
             row_dict = {"row": row_label}
 
-            for col_idx, model_name in enumerate(model_names):
+            for col_idx, model_name in model_columns:
                 cell_val = row[col_idx + 2]
                 if cell_val == '—' or cell_val is None:
                     row_dict[model_name] = None
@@ -1675,6 +1693,8 @@ def get_rgcnformer_loc_comparison():
             if model_name is None:
                 continue
             model_name = str(model_name)
+            if is_hidden_model_name(model_name):
+                continue
             model_names.append(model_name)
             row_values = []
             for col_idx in range(len(K_VALUE_COLUMNS)):
@@ -1837,7 +1857,6 @@ ATTENTION_NPZ_FILES = {
     'DCPRES': os.path.join(os.path.dirname(__file__), 'data', 'DCPRES_atten.npz'),
     'SCDGC': os.path.join(os.path.dirname(__file__), 'data', 'SCDGC_atten.npz'),
     'DSCPS': os.path.join(os.path.dirname(__file__), 'data', 'DSCPS_atten.npz'),
-    'GCN': os.path.join(os.path.dirname(__file__), 'data', 'GCN_atten.npz'),
 }
 
 CLASS_NAMES = ['Am', 'Atol', 'Cm', 'Gm', 'Tm', 'Y', 'ac4C', 'm1A', 'm5C', 'm6A', 'm6Am', 'm7G']
@@ -1846,7 +1865,7 @@ CLASS_NAMES = ['Am', 'Atol', 'Cm', 'Gm', 'Tm', 'Y', 'ac4C', 'm1A', 'm5C', 'm6A',
 @app.route('/api/v1/attention-comparison', methods=['GET'])
 def get_attention_comparison():
     """
-    Get pre-computed attention comparison data for 4 models.
+    Get pre-computed attention comparison data for the visible models.
     Randomly selects 5 samples, or selects one sample by the sequence_id query
     parameter, and returns attention weights for classes with label=1.
     """

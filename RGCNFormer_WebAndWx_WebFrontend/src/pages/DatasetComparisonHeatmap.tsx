@@ -40,12 +40,13 @@
  *     queryFn: fetchDatasetComparison,
  *   });
  */
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import * as echarts from 'echarts';
 import type { ECharts } from 'echarts';
 import { useTranslation } from '../lib/i18n/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDatasetComparison, type DatasetComparisonData } from '../lib/api';
+import { isHiddenModelName } from '../lib/modelVisibility';
 
 const MORANDI = {
   sidebarBg: '#9E9288',
@@ -79,15 +80,19 @@ const DatasetComparisonHeatmap: React.FC<DatasetComparisonHeatmapProps> = ({ dat
   });
 
   const data = propData || queryData;
+  const visibleModelNames = useMemo(
+    () => data?.model_names.filter((modelName) => !isHiddenModelName(modelName)) ?? [],
+    [data]
+  );
 
   useEffect(() => {
-    if (!chartRef.current || !data) return;
+    if (!chartRef.current || !data || visibleModelNames.length === 0) return;
 
     const container = chartRef.current;
     const isMobile = window.innerWidth < 768;
 
     const allValues = data.data.flatMap((row) =>
-      data.model_names.map((m) => row[m] as number | null).filter((v): v is number => v !== null)
+      visibleModelNames.map((modelName) => row[modelName] as number | null).filter((v): v is number => v !== null)
     );
     const dataMin = Math.min(...allValues);
     const dataMax = Math.max(...allValues);
@@ -96,7 +101,7 @@ const DatasetComparisonHeatmap: React.FC<DatasetComparisonHeatmapProps> = ({ dat
     const nullData: (number | string)[][] = [];
 
     data.data.forEach((row, rowIndex) => {
-      data.model_names.forEach((model, colIndex) => {
+      visibleModelNames.forEach((model, colIndex) => {
         const val = row[model];
         if (val === null) {
           nullData.push([colIndex, data.row_labels.length - 1 - rowIndex, 'null_marker']);
@@ -113,11 +118,11 @@ const DatasetComparisonHeatmap: React.FC<DatasetComparisonHeatmapProps> = ({ dat
         formatter: (params: any) => {
           if (params.data[2] === 'null_marker') {
             const rowLabel = data.row_labels[data.row_labels.length - 1 - params.data[1]];
-            const modelName = data.model_names[params.data[0]];
+            const modelName = visibleModelNames[params.data[0]];
             return `${rowLabel}<br/>${modelName}: —`;
           }
           const rowLabel = data.row_labels[data.row_labels.length - 1 - params.data[1]];
-          const modelName = data.model_names[params.data[0]];
+          const modelName = visibleModelNames[params.data[0]];
           const value = (params.data[2] as number).toFixed(2);
           return `${rowLabel}<br/>${modelName}: ${value}%`;
         },
@@ -146,7 +151,7 @@ const DatasetComparisonHeatmap: React.FC<DatasetComparisonHeatmapProps> = ({ dat
       },
       xAxis: {
         type: 'category',
-        data: data.model_names,
+        data: visibleModelNames,
         splitArea: { show: true },
         axisLabel: {
           color: '#4A4A4A',
@@ -263,7 +268,7 @@ const DatasetComparisonHeatmap: React.FC<DatasetComparisonHeatmapProps> = ({ dat
       const c = chartInstanceRef.current;
       if (c) c.dispose();
     };
-  }, [data]);
+  }, [data, visibleModelNames]);
 
   const renderContent = () => {
     if (isLoading) {
@@ -296,7 +301,7 @@ const DatasetComparisonHeatmap: React.FC<DatasetComparisonHeatmapProps> = ({ dat
       );
     }
 
-    if (!data) {
+    if (!data || visibleModelNames.length === 0) {
       return (
         <div style={{
           display: 'flex',
